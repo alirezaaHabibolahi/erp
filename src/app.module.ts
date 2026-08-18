@@ -12,10 +12,7 @@ import { RedisService } from '@app/common/redis/redis.service';
 import { generalConfig } from './config/general';
 import { AccessModule } from './access/access.module';
 import { RoleModule } from './role/role.module';
-import { CronModule } from './cron/cron.module';
-import { StuffidModule } from './stuffid/stuffid.module';
 import { ImportLogModule } from './logs/import-log.module';
-import { ProductModule } from './products/products.module';
 import { RateLimitGuard } from './guards/rate-limit.guard';
 
 
@@ -30,10 +27,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     // UsersModule,
     // AccessModule,
     // RoleModule,
-    CronModule,
-    StuffidModule,
     ImportLogModule,
-    ProductModule
   ],
   controllers: [AppController],
   providers: [
