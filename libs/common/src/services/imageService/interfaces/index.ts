@@ -1,0 +1,5 @@
+export * from "./resize-options.interface"
+export * from "./image-input.interface"
+export * from "./image-result.interface"
+export * from "./convert-options.interface"
+export * from "./crop-options.interface"

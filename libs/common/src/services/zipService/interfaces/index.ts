@@ -1,0 +1,5 @@
+export * from "./extract-options.interface"
+export * from "./zip-add-file-options.interface"
+export * from "./zip-open-options-interface"
+export * from "./zip-create-options.interface"
+export * from "./zip-add-buffer-options.interface"

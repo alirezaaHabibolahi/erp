@@ -1,0 +1,15 @@
+# Keep the build context small and never embed local runtime data or secrets.
+.git
+.gitignore
+.husky
+.idea
+.vscode
+node_modules
+dist
+coverage
+downloads
+.env
+.env.*
+!.env.example
+*.log
+README.md
