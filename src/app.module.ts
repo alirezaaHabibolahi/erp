@@ -12,7 +12,6 @@ import { RedisService } from '@app/common/redis/redis.service';
 import { generalConfig } from './config/general';
 import { AccessModule } from './access/access.module';
 import { RoleModule } from './role/role.module';
-import { ImportLogModule } from './logs/import-log.module';
 import { RateLimitGuard } from './guards/rate-limit.guard';
 
 
@@ -27,7 +26,6 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     // UsersModule,
     // AccessModule,
     // RoleModule,
-    ImportLogModule,
   ],
   controllers: [AppController],
   providers: [
