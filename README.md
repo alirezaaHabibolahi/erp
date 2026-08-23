@@ -1,98 +1,117 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# ERP Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This repository is the backend codebase for a modular ERP system built with
+NestJS and TypeScript.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+The current codebase is an early backend foundation. It already contains auth,
+users, roles, accesses, SMS, Redis, file/excel utilities, and a MongoDB-based
+data layer. The target architecture is a PostgreSQL + Prisma ERP backend with a
+dynamic IAM/RBAC/ABAC permission system.
 
-## Description
+## Current Status
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- Framework: NestJS 11 + TypeScript
+- Package manager: Yarn 1.22.22
+- Current database layer: MongoDB/Mongoose
+- Target database layer: PostgreSQL + Prisma
+- Current auth: JWT + refresh token session model
+- Current access model: simple role/access list
+- Target access model: subsystem/resource/action/scope/condition
+- Documentation root: [docs](./docs/README.md)
 
-## Project setup
+Important current notes:
 
-```bash
-$ yarn install
-```
+- Auth routes in `src/auth/auth.controller.ts` are currently commented out.
+- `UsersModule`, `AccessModule`, and `RoleModule` are commented out in
+  `src/app.module.ts`.
+- `RoleController` and `AccessController` do not have guards if they are enabled.
+- MongoDB models exist under `libs/common/src/database/schemas/models`.
+- Future ERP work should start from the documented PostgreSQL/Prisma foundation.
 
-## Compile and run the project
+## Documentation Map
 
-```bash
-# development
-$ yarn run start
+Read these files before changing architecture or adding ERP modules:
 
-# watch mode
-$ yarn run start:dev
+- [Documentation Home](./docs/README.md)
+- [Current Backend Architecture](./docs/architecture/01-current-backend.md)
+- [Target Backend Architecture](./docs/architecture/02-target-backend-architecture.md)
+- [Current MongoDB Models](./docs/database/01-current-mongodb-models.md)
+- [Target PostgreSQL and Prisma Schema](./docs/database/02-target-postgresql-prisma-schema.md)
+- [IAM, RBAC, ABAC, Permissions](./docs/iam/01-iam-rbac-abac.md)
+- [ERP Module Documentation Template](./docs/modules/00-module-template.md)
+- [Sales Invoice Flow](./docs/modules/01-sales-invoice-flow.md)
+- [Code Structure and Conventions](./docs/standards/01-code-structure-and-conventions.md)
+- [AI Implementation Plan](./docs/ai/01-ai-implementation-plan.md)
 
-# production mode
-$ yarn run start:prod
-```
+## Local Setup
 
-## Run tests
-
-```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
-```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Install dependencies:
 
 ```bash
-$ yarn install -g mau
-$ mau deploy
+yarn install
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+Run in development mode:
 
-## Resources
+```bash
+yarn start:dev
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+If Windows/Yarn cannot resolve the local Nest binary, use:
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+yarn run nest start --watch
+```
 
-## Support
+Build:
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```bash
+yarn build
+```
 
-## Stay in touch
+Run tests:
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+yarn test
+```
 
-## License
+## Required Environment Variables
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+The current MongoDB-based runtime needs at least:
+
+```env
+PORT=3000
+
+DATABASE_MONGO_URL=mongodb://127.0.0.1:27017
+DATABASE_MONGO_NAME=erp
+DATABASE_MONGO_USER=
+DATABASE_MONGO_PASS=
+
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+REDIS_URL=redis://127.0.0.1:6379
+
+SESSION_SECRET=change_me
+JWT_SECRET=change_me
+JWT_ACCESS_SECRET=change_me
+JWT_REFRESH_SECRET=change_me
+JWT_EXPIRES_IN=1d
+JWT_ACCESS_SECRET_EXPIRE_TIME=1d
+JWT_REFRESH_SECRET_EXPIRE_TIME=7d
+```
+
+Target PostgreSQL variables are documented in
+[Target PostgreSQL and Prisma Schema](./docs/database/02-target-postgresql-prisma-schema.md).
+
+## Development Direction
+
+The recommended order is:
+
+1. Add PostgreSQL + Prisma foundation.
+2. Migrate organization and identity tables.
+3. Build IAM/RBAC/ABAC with dynamic permissions.
+4. Add policy guards and audit logs.
+5. Build ERP subsystems, starting with sales invoice flow.
+
+The detailed phased plan is in
+[AI Implementation Plan](./docs/ai/01-ai-implementation-plan.md).
