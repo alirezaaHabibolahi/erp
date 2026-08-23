@@ -14,6 +14,7 @@ dynamic IAM/RBAC/ABAC permission system.
 - Package manager: Yarn 1.22.22
 - Current database layer: MongoDB/Mongoose
 - Target database layer: PostgreSQL + Prisma
+- Prisma foundation: added for auth and permission tables only
 - Current auth: JWT + refresh token session model
 - Current access model: simple role/access list
 - Target access model: subsystem/resource/action/scope/condition
@@ -26,7 +27,9 @@ Important current notes:
   `src/app.module.ts`.
 - `RoleController` and `AccessController` do not have guards if they are enabled.
 - MongoDB models exist under `libs/common/src/database/schemas/models`.
-- Future ERP work should start from the documented PostgreSQL/Prisma foundation.
+- Prisma files exist under `prisma` and `src/database`.
+- The new Prisma module is not imported into `AppModule` yet, so the current
+  Mongo runtime is not broken while the auth/permission migration is in progress.
 
 ## Documentation Map
 
@@ -49,6 +52,30 @@ Install dependencies:
 
 ```bash
 yarn install
+```
+
+Start local infrastructure:
+
+```bash
+docker compose up -d postgres redis
+```
+
+Generate Prisma client:
+
+```bash
+yarn prisma:generate
+```
+
+Create and run the first PostgreSQL migration:
+
+```bash
+yarn prisma:migrate:dev --name auth_permission_foundation
+```
+
+Seed test auth/permission data:
+
+```bash
+yarn db:seed
 ```
 
 Run in development mode:
@@ -82,6 +109,9 @@ The current MongoDB-based runtime needs at least:
 ```env
 PORT=3000
 
+DATABASE_URL=postgresql://erp_user:erp_password@localhost:5432/erp?schema=public
+DIRECT_URL=postgresql://erp_user:erp_password@localhost:5432/erp?schema=public
+
 DATABASE_MONGO_URL=mongodb://127.0.0.1:27017
 DATABASE_MONGO_NAME=erp
 DATABASE_MONGO_USER=
@@ -98,6 +128,8 @@ JWT_REFRESH_SECRET=change_me
 JWT_EXPIRES_IN=1d
 JWT_ACCESS_SECRET_EXPIRE_TIME=1d
 JWT_REFRESH_SECRET_EXPIRE_TIME=7d
+
+SEED_USER_PASSWORD=Passw0rd!123
 ```
 
 Target PostgreSQL variables are documented in
@@ -107,12 +139,12 @@ Target PostgreSQL variables are documented in
 
 The recommended order is:
 
-1. Add PostgreSQL + Prisma foundation only for auth and permissions.
-2. Build Auth, roles, permissions, scopes, and policy guard.
-3. Add small test organization data such as company, branch, subsystem, resource,
+1. Build Auth, roles, permissions, scopes, and policy guard on the Prisma
+   foundation.
+2. Verify authentication and authorization with test protected routes.
+3. Keep small test organization data such as company, branch, subsystem, resource,
    action, permission, and role.
-4. Verify authentication and authorization with test protected routes.
-5. Start ERP business modules only after auth and permissions are stable.
+4. Start ERP business modules only after auth and permissions are stable.
 
 The detailed phased plan is in
 [AI Implementation Plan](./docs/ai/01-ai-implementation-plan.md).

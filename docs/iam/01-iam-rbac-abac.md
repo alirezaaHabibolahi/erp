@@ -371,6 +371,26 @@ roles:
   test_branch_manager
 ```
 
+Seed users:
+
+```text
+test_admin            phone: 09120000001
+test_sales_operator   phone: 09120000002
+test_branch_manager   phone: 09120000003
+```
+
+Default seed password:
+
+```text
+Passw0rd!123
+```
+
+Override the password with:
+
+```env
+SEED_USER_PASSWORD=your_password
+```
+
 Example role permission setup:
 
 ```text

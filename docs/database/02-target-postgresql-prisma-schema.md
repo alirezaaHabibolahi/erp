@@ -34,11 +34,37 @@ and authorization can be verified.
 Phase 1 must not create ERP business tables such as invoices, products,
 inventory, accounting, or reports.
 
+Implemented Phase 1 files:
+
+```text
+prisma/schema.prisma
+prisma/seed.ts
+src/database/prisma.module.ts
+src/database/prisma.service.ts
+docker-compose.yml
+.env.example
+```
+
+The Prisma schema is intentionally limited to auth and permissions. It is valid
+and can generate Prisma Client without a live database.
+
+Migration command:
+
+```bash
+yarn prisma:migrate:dev --name auth_permission_foundation
+```
+
+Seed command:
+
+```bash
+yarn db:seed
+```
+
 ## Environment Variables
 
 ```env
-DATABASE_URL=postgresql://erp_user:erp_password@localhost:5432/erp
-DIRECT_URL=postgresql://erp_user:erp_password@localhost:5432/erp
+DATABASE_URL=postgresql://erp_user:erp_password@localhost:5432/erp?schema=public
+DIRECT_URL=postgresql://erp_user:erp_password@localhost:5432/erp?schema=public
 REDIS_URL=redis://127.0.0.1:6379
 ```
 

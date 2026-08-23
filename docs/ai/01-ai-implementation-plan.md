@@ -45,6 +45,14 @@ Done when:
 
 ## Phase 1 - Auth and Permission Foundation
 
+Status:
+
+```text
+In progress. Prisma packages, schema, seed, docker-compose, env example, and
+Nest Prisma module/service have been added. The first database migration still
+needs to be created and run against a live PostgreSQL database.
+```
+
 Goal:
 
 ```text
@@ -57,15 +65,15 @@ phase is small test metadata needed to verify authorization.
 
 Tasks:
 
-- Add Prisma dependencies.
-- Add PostgreSQL Docker Compose or local setup docs.
-- Add `DATABASE_URL` and env validation.
-- Create `src/database/prisma.module.ts`.
-- Create `src/database/prisma.service.ts`.
-- Add initial Prisma schema for auth and permissions only.
+- Add Prisma dependencies. Done.
+- Add PostgreSQL Docker Compose or local setup docs. Done.
+- Add `DATABASE_URL` and env example. Done.
+- Create `src/database/prisma.module.ts`. Done.
+- Create `src/database/prisma.service.ts`. Done.
+- Add initial Prisma schema for auth and permissions only. Done.
 - Add first migration for minimal organization context and IAM tables.
 - Add seed script for test company, branch, subsystem, resource, action, scope,
-  permission, role, and user.
+  permission, role, and user. Done.
 - Add one or two protected test routes to verify permission checks.
 
 Initial tables:
@@ -129,6 +137,29 @@ Done when:
 - Seed creates test IAM metadata.
 - A user can log in.
 - A protected route can allow/deny based on permission.
+
+Implemented files:
+
+```text
+package.json
+yarn.lock
+docker-compose.yml
+.env.example
+prisma/schema.prisma
+prisma/seed.ts
+src/database/prisma.module.ts
+src/database/prisma.service.ts
+```
+
+Useful commands:
+
+```bash
+docker compose up -d postgres redis
+yarn prisma:validate
+yarn prisma:generate
+yarn prisma:migrate:dev --name auth_permission_foundation
+yarn db:seed
+```
 
 ## Phase 2 - Auth Runtime and Policy Engine
 
