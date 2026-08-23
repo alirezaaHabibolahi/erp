@@ -331,3 +331,57 @@ inventory.product.update
 inventory.product.delete
 inventory.product.hard_delete
 ```
+
+## Phase 1 Test Permissions
+
+For the first implementation phase, do not seed the full ERP permission catalog.
+Seed only enough metadata to test authentication and authorization.
+
+Recommended Phase 1 seed:
+
+```text
+company: Demo Company
+branch: Tehran Branch
+
+subsystem:
+  test_sales
+
+resource:
+  test_invoice
+
+actions:
+  read
+  create
+  approve
+
+scopes:
+  own
+  branch
+  company
+  all
+
+permissions:
+  test_sales.test_invoice.read
+  test_sales.test_invoice.create
+  test_sales.test_invoice.approve
+
+roles:
+  test_admin
+  test_sales_operator
+  test_branch_manager
+```
+
+Example role permission setup:
+
+```text
+test_sales_operator:
+  test_sales.test_invoice.read      scope: own
+  test_sales.test_invoice.create    scope: branch
+
+test_branch_manager:
+  test_sales.test_invoice.read      scope: branch
+  test_sales.test_invoice.approve   scope: branch
+
+test_admin:
+  all test permissions              scope: all
+```

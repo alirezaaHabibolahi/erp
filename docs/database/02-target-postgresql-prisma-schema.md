@@ -4,6 +4,36 @@ This document defines the target database structure for the ERP backend.
 
 The target database is PostgreSQL. Prisma is the recommended ORM/migration tool.
 
+## Current Implementation Slice
+
+The first implementation phase is intentionally limited to auth and permissions.
+
+Phase 1 should create only:
+
+```text
+companies
+branches
+users
+auth_sessions
+subsystems
+resources
+actions
+permissions
+scopes
+roles
+role_permissions
+user_roles
+user_permission_overrides
+audit_logs
+```
+
+Phase 1 may seed test metadata such as a demo company, one branch, test
+subsystems, test resources, test permissions, and test roles so authentication
+and authorization can be verified.
+
+Phase 1 must not create ERP business tables such as invoices, products,
+inventory, accounting, or reports.
+
 ## Environment Variables
 
 ```env

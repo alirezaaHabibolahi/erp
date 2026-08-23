@@ -43,13 +43,17 @@ Done when:
 - README points to all documentation.
 - Future phases are clear.
 
-## Phase 1 - PostgreSQL and Prisma Foundation
+## Phase 1 - Auth and Permission Foundation
 
 Goal:
 
 ```text
-Add the target database foundation without breaking the current code.
+Add PostgreSQL + Prisma only for authentication and authorization foundations.
 ```
+
+This phase must not implement ERP business modules such as invoices, products,
+inventory, accounting, or reports. The only business-like data allowed in this
+phase is small test metadata needed to verify authorization.
 
 Tasks:
 
@@ -58,16 +62,17 @@ Tasks:
 - Add `DATABASE_URL` and env validation.
 - Create `src/database/prisma.module.ts`.
 - Create `src/database/prisma.service.ts`.
-- Add initial Prisma schema.
-- Add first migration for organization and IAM core tables.
-- Add seed script for base actions, scopes, and system permissions.
+- Add initial Prisma schema for auth and permissions only.
+- Add first migration for minimal organization context and IAM tables.
+- Add seed script for test company, branch, subsystem, resource, action, scope,
+  permission, role, and user.
+- Add one or two protected test routes to verify permission checks.
 
 Initial tables:
 
 ```text
 companies
 branches
-departments
 users
 auth_sessions
 subsystems
@@ -82,29 +87,70 @@ user_permission_overrides
 audit_logs
 ```
 
+Tables intentionally excluded from Phase 1:
+
+```text
+departments
+customers
+products
+pre_invoices
+pre_invoice_items
+invoices
+invoice_items
+warehouses
+stock_movements
+accounting_documents
+```
+
+Test seed example:
+
+```text
+company: Demo Company
+branch: Tehran Branch
+subsystem: test_sales
+resource: test_invoice
+actions: read, create, approve
+scopes: own, branch, company, all
+permissions:
+  test_sales.test_invoice.read
+  test_sales.test_invoice.create
+  test_sales.test_invoice.approve
+roles:
+  test_admin
+  test_sales_operator
+  test_branch_manager
+```
+
 Done when:
 
 - App builds.
 - Prisma client generates.
 - Migration runs against local PostgreSQL.
-- Seed creates base IAM metadata.
+- Seed creates test IAM metadata.
+- A user can log in.
+- A protected route can allow/deny based on permission.
 
-## Phase 2 - IAM Core
+## Phase 2 - Auth Runtime and Policy Engine
 
 Goal:
 
 ```text
-Move identity and session foundations to PostgreSQL.
+Make authentication and authorization usable in the running NestJS app.
 ```
 
 Tasks:
 
 - Implement users table access through Prisma.
-- Implement company/branch/department user context.
+- Implement company/branch user context.
 - Implement password hash and OTP fields.
 - Implement auth sessions with refresh token hash.
 - Implement login, refresh, logout.
 - Reactivate auth controller routes safely.
+- Implement permission catalog access.
+- Implement `PolicyService`.
+- Implement `PermissionGuard`.
+- Implement `@RequirePermission(...)`.
+- Add test authorization endpoints.
 - Add tests for login and refresh token rotation.
 
 Done when:
@@ -113,13 +159,15 @@ Done when:
 - Refresh tokens rotate.
 - Revoked sessions cannot refresh.
 - Inactive users cannot authenticate.
+- Permission-based route allow/deny works.
+- Branch-scoped permission can be tested with seed data.
 
-## Phase 3 - Dynamic Permissions and Policy Engine
+## Phase 3 - Dynamic Permission Administration
 
 Goal:
 
 ```text
-Implement RBAC + ABAC for ERP-level access control.
+Make RBAC + ABAC manageable through backend APIs.
 ```
 
 Tasks:
@@ -129,9 +177,6 @@ Tasks:
 - Implement role permissions with scope and conditions.
 - Implement user roles.
 - Implement user permission overrides.
-- Implement `PolicyService`.
-- Implement `PermissionGuard`.
-- Implement `@RequirePermission(...)`.
 - Add effective permissions endpoint for admin/debugging.
 - Audit role and permission changes.
 
@@ -290,7 +335,8 @@ Done when:
 Start with:
 
 ```text
-Phase 1 - PostgreSQL and Prisma Foundation
+Phase 1 - Auth and Permission Foundation
 ```
 
-Do not start invoices before IAM and organization foundations exist.
+Do not start invoices, products, inventory, accounting, or other ERP business
+modules before auth and permissions are stable.

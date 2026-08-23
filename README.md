@@ -107,11 +107,12 @@ Target PostgreSQL variables are documented in
 
 The recommended order is:
 
-1. Add PostgreSQL + Prisma foundation.
-2. Migrate organization and identity tables.
-3. Build IAM/RBAC/ABAC with dynamic permissions.
-4. Add policy guards and audit logs.
-5. Build ERP subsystems, starting with sales invoice flow.
+1. Add PostgreSQL + Prisma foundation only for auth and permissions.
+2. Build Auth, roles, permissions, scopes, and policy guard.
+3. Add small test organization data such as company, branch, subsystem, resource,
+   action, permission, and role.
+4. Verify authentication and authorization with test protected routes.
+5. Start ERP business modules only after auth and permissions are stable.
 
 The detailed phased plan is in
 [AI Implementation Plan](./docs/ai/01-ai-implementation-plan.md).
