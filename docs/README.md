@@ -16,7 +16,6 @@ docs/
     01-current-backend.md
     02-target-backend-architecture.md
   database/
-    01-current-mongodb-models.md
     02-target-postgresql-prisma-schema.md
   iam/
     01-iam-rbac-abac.md
@@ -63,8 +62,8 @@ For AI-assisted implementation:
 | IAM       | Identity and Access Management: users, auth, sessions, roles, access |
 | RBAC      | Role-Based Access Control                                            |
 | ABAC      | Attribute-Based Access Control                                       |
-| Subsystem | A major ERP area, such as sales, inventory, accounting               |
-| Resource  | An entity inside a subsystem, such as invoice or product             |
-| Action    | An operation on a resource, such as read, create, approve            |
-| Scope     | The data boundary for a permission, such as own, branch, all         |
+| System    | A major ERP area, such as sales, finance, inventory                  |
+| Resource  | An entity inside a system, such as invoice or product                |
+| Action    | An operation on a resource, such as READ, CREATE, APPROVE            |
+| Scope     | The data boundary for a permission, such as OWN, BRANCH, COMPANY     |
 | Condition | Extra dynamic access rule stored as JSONB in PostgreSQL              |

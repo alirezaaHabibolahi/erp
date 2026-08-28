@@ -19,7 +19,7 @@ Explain what business problem this module solves.
 Target source path:
 
 ```text
-src/erp/<subsystem>/<resource>
+src/erp/<system>/<resource>
 ```
 
 Example:
@@ -54,11 +54,11 @@ draft -> cancelled
 List required permission codes.
 
 ```text
-subsystem.resource.read
-subsystem.resource.create
-subsystem.resource.update
-subsystem.resource.delete
-subsystem.resource.approve
+<systemCode>.<resourceCode>.1 = RESOURCE.READ
+<systemCode>.<resourceCode>.2 = RESOURCE.CREATE
+<systemCode>.<resourceCode>.3 = RESOURCE.UPDATE
+<systemCode>.<resourceCode>.4 = RESOURCE.SOFT_DELETE
+<systemCode>.<resourceCode>.6 = RESOURCE.APPROVE
 ```
 
 ## API Endpoints

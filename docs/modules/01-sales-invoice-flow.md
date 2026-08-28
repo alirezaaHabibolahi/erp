@@ -2,10 +2,10 @@
 
 This document describes the target sales invoice flow for the ERP.
 
-## Subsystem
+## System
 
 ```text
-sales
+2 = SALES
 ```
 
 ## Main Resources
@@ -21,7 +21,7 @@ payment
 
 ## Business Purpose
 
-The sales subsystem manages the customer sales process:
+The sales system manages the customer sales process:
 
 ```text
 Customer
@@ -101,7 +101,8 @@ Status meanings:
 - Converted pre-invoices cannot be edited.
 - Invoice totals must be calculated from items.
 - Manual total override should require a special permission.
-- Hard delete should be blocked unless user has `sales.invoice.hard_delete`.
+- Hard delete should be blocked unless user has the `HARD_DELETE` action for
+  the invoice resource.
 - Every approval, cancellation, and hard delete must be audited.
 
 ## Permissions
@@ -109,45 +110,45 @@ Status meanings:
 ### Customer
 
 ```text
-sales.customer.read
-sales.customer.create
-sales.customer.update
-sales.customer.delete
-sales.customer.hard_delete
-sales.customer.export
+SALES_CUSTOMER.READ
+SALES_CUSTOMER.CREATE
+SALES_CUSTOMER.UPDATE
+SALES_CUSTOMER.SOFT_DELETE
+SALES_CUSTOMER.HARD_DELETE
+SALES_CUSTOMER.EXPORT
 ```
 
 ### Pre-Invoice
 
 ```text
-sales.pre_invoice.read
-sales.pre_invoice.create
-sales.pre_invoice.update
-sales.pre_invoice.delete
-sales.pre_invoice.hard_delete
-sales.pre_invoice.submit
-sales.pre_invoice.approve
-sales.pre_invoice.reject
-sales.pre_invoice.cancel
-sales.pre_invoice.convert_to_invoice
-sales.pre_invoice.export
-sales.pre_invoice.print
+2.1001.1 = SALES_PROFORMA.READ
+2.1001.2 = SALES_PROFORMA.CREATE
+2.1001.3 = SALES_PROFORMA.UPDATE
+2.1001.4 = SALES_PROFORMA.SOFT_DELETE
+2.1001.5 = SALES_PROFORMA.HARD_DELETE
+2.1001.11 = SALES_PROFORMA.SUBMIT
+2.1001.6 = SALES_PROFORMA.APPROVE
+2.1001.7 = SALES_PROFORMA.REJECT
+2.1001.8 = SALES_PROFORMA.CANCEL
+SALES_PROFORMA.CONVERT_TO_INVOICE
+2.1001.10 = SALES_PROFORMA.EXPORT
+2.1001.9 = SALES_PROFORMA.PRINT
 ```
 
 ### Invoice
 
 ```text
-sales.invoice.read
-sales.invoice.create
-sales.invoice.update
-sales.invoice.delete
-sales.invoice.hard_delete
-sales.invoice.approve
-sales.invoice.cancel
-sales.invoice.void
-sales.invoice.send_to_tax
-sales.invoice.export
-sales.invoice.print
+2.1000.1 = SALES_INVOICE.READ
+2.1000.2 = SALES_INVOICE.CREATE
+2.1000.3 = SALES_INVOICE.UPDATE
+2.1000.4 = SALES_INVOICE.SOFT_DELETE
+2.1000.5 = SALES_INVOICE.HARD_DELETE
+2.1000.6 = SALES_INVOICE.APPROVE
+2.1000.8 = SALES_INVOICE.CANCEL
+SALES_INVOICE.VOID
+SALES_INVOICE.SEND_TO_TAX
+2.1000.10 = SALES_INVOICE.EXPORT
+2.1000.9 = SALES_INVOICE.PRINT
 ```
 
 ## Scope Examples
@@ -155,15 +156,15 @@ sales.invoice.print
 Sales operator:
 
 ```text
-permission: sales.invoice.read
-scope: own
+permission: 2.1000.1 = SALES_INVOICE.READ
+scope: OWN
 ```
 
 Branch manager:
 
 ```text
-permission: sales.invoice.approve
-scope: branch
+permission: 2.1000.6 = SALES_INVOICE.APPROVE
+scope: BRANCH
 condition:
   maxAmount: 500000000
 ```
@@ -171,15 +172,15 @@ condition:
 Company finance manager:
 
 ```text
-permission: sales.invoice.read
-scope: company
+permission: 2.1000.1 = SALES_INVOICE.READ
+scope: COMPANY
 ```
 
 System admin:
 
 ```text
-permission: sales.invoice.hard_delete
-scope: all
+permission: 2.1000.5 = SALES_INVOICE.HARD_DELETE
+scope: ALL
 ```
 
 ## Target Tables
@@ -335,7 +336,7 @@ GET    /sales/invoices/export
 ```text
 request
   -> validate customer
-  -> check sales.pre_invoice.create
+  -> check 2.1001.2 = SALES_PROFORMA.CREATE
   -> validate items
   -> calculate totals
   -> generate number
@@ -348,7 +349,7 @@ request
 
 ```text
 request
-  -> check sales.pre_invoice.approve
+  -> check 2.1001.6 = SALES_PROFORMA.APPROVE
   -> load pre_invoice
   -> verify status is pending_approval
   -> evaluate scope and conditions
@@ -362,7 +363,7 @@ request
 
 ```text
 request
-  -> check sales.pre_invoice.convert_to_invoice
+  -> check SALES_PROFORMA.CONVERT_TO_INVOICE
   -> load approved pre_invoice with items
   -> create invoice and invoice_items in transaction
   -> set pre_invoice status converted

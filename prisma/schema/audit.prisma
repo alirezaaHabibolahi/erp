@@ -1,0 +1,24 @@
+model AuditLog {
+  id          String   @id @default(cuid())
+  companyId   String?  @map("company_id")
+  actorUserId String?  @map("actor_user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id")
+  oldValues   Json?    @map("old_values")
+  newValues   Json?    @map("new_values")
+  metadata    Json?
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent") @db.Text
+  requestId   String?  @map("request_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  actorUser User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([companyId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

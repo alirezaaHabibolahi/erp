@@ -1,14 +1,14 @@
 export interface TokenPayload {
-  _id: string;
-  roleId: string;
-  role: string;
-  is_active: boolean;
-  is_verified: boolean;
-  is_admin: boolean;
-  accesses: string[];
+  sub: string;
+  sessionId: string;
+  phone: string;
+  tokenType: 'access';
+  iat?: number;
+  exp?: number;
 }
 
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
+  sessionId: string;
 }

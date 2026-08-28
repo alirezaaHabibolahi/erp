@@ -2,18 +2,25 @@
 
 This document defines the target access-control model for the ERP backend.
 
-## Goal
+## Core Decision
 
-The ERP must support very detailed access control:
+Users are identity records only.
+
+`User` must not contain:
 
 ```text
-User A can read sales invoices only in their own branch.
-User B can approve pre-invoices only below a specific amount.
-User C can update inventory products but cannot hard delete them.
-User D can export accounting reports only for one department.
+companyId
+branchId
+isSuperAdmin
+membership
 ```
 
-This requires more than simple roles.
+Access is derived from role assignments and scopes:
+
+```text
+User -> UserRole -> Role -> RolePermission -> Permission
+                 -> UserRoleScope -> UserRoleScopeBranch
+```
 
 ## Concepts
 
@@ -21,354 +28,298 @@ This requires more than simple roles.
 
 Identity and Access Management.
 
-Includes:
-
-- Users
-- Login
-- OTP
-- Passwords
-- Sessions
-- Refresh tokens
-- Active/inactive status
-- Role assignment
-- Permission evaluation
+Includes users, login, OTP/passwords, sessions, refresh tokens, role
+assignment, permission evaluation, and audit.
 
 ### RBAC
 
-Role-Based Access Control.
+Role-Based Access Control answers:
+
+```text
+Which permissions does this role have?
+```
 
 Example:
 
 ```text
-role: sales_manager
-permissions:
-  sales.invoice.read
-  sales.invoice.create
-  sales.invoice.update
-  sales.pre_invoice.approve
+Role: SALES_OPERATOR
+Permissions:
+  2.1001.1 = SALES_PROFORMA.READ
+  2.1001.2 = SALES_PROFORMA.CREATE
 ```
 
 ### ABAC
 
-Attribute-Based Access Control.
+Attribute-Based Access Control answers:
+
+```text
+Where and under which conditions is this permission valid?
+```
 
 Example:
 
 ```text
-sales.invoice.approve
-scope: branch
-conditions:
+Permission: 2.1001.3 = SALES_PROFORMA.UPDATE
+Scope: OWN
+Branches: Tehran
+Conditions:
   maxAmount: 500000000
-  statuses: ["pending_approval"]
 ```
 
-## Permission Code Format
+## Numeric Permission Format
 
-Use this format:
+Use this machine format:
 
 ```text
-<subsystem>.<resource>.<action>
+<systemCode>.<resourceCode>.<actionCode>
 ```
 
-Examples:
+Example:
 
 ```text
-sales.invoice.read
-sales.invoice.create
-sales.invoice.update
-sales.invoice.delete
-sales.invoice.hard_delete
-sales.invoice.approve
-sales.pre_invoice.convert_to_invoice
-inventory.product.read
-inventory.stock_movement.create
-iam.role.update
-iam.permission.assign
+2.1001.1
 ```
 
-Rules:
-
-- Use lowercase.
-- Use dots between parts.
-- Use snake_case for multi-word parts.
-- Never use random strings.
-- Every permission code must exist in the `permissions` table.
-
-## Initial Subsystems
+Meaning:
 
 ```text
-iam
-organization
-sales
-inventory
-accounting
-hr
-notifications
-audit
+systemCode: 2      = SALES
+resourceCode: 1001 = SALES_PROFORMA
+actionCode: 1      = READ
 ```
 
-## Initial Actions
+The readable equivalent is stored too:
 
 ```text
-read
-create
-update
-delete
-hard_delete
-approve
-reject
-cancel
-export
-print
-lock
-unlock
-change_status
-send_to_tax
-convert_to_invoice
-assign
-revoke
+SALES_PROFORMA.READ
 ```
 
-## Initial Scopes
+Branch, company, warehouse, sales center, and fiscal year must not be embedded
+inside the permission key. They are scopes/conditions, not permissions.
 
-| Scope      | Meaning                                         |
-| ---------- | ----------------------------------------------- |
-| own        | Only records created by or assigned to the user |
-| branch     | Records in the user's branch                    |
-| department | Records in the user's department                |
-| company    | Records in the user's company                   |
-| all        | All records available to the system             |
-| custom     | Evaluate JSONB conditions                       |
+## Initial System Codes
 
-## Condition Examples
-
-Use PostgreSQL JSONB for conditions.
-
-Invoice branch restriction:
-
-```json
-{
-  "branchId": "$user.branchId"
-}
+```text
+1  FINANCE
+2  SALES
+3  INVENTORY
+90 IAM
 ```
 
-Approve only below amount:
+## Initial Resource Codes
 
-```json
-{
-  "maxAmount": 500000000
-}
+```text
+1000 SALES_INVOICE
+1001 SALES_PROFORMA
+1003 SALES_CENTER
 ```
 
-Allow update only for draft invoices:
+Resource codes are grouped by ERP system. A future shared contracts package
+will expose these constants to backend and frontend.
 
-```json
-{
-  "status": ["draft"]
-}
+## Initial Action Codes
+
+```text
+1  READ
+2  CREATE
+3  UPDATE
+4  SOFT_DELETE
+5  HARD_DELETE
+6  APPROVE
+7  REJECT
+8  CANCEL
+9  PRINT
+10 EXPORT
+11 SUBMIT
 ```
 
-Allow warehouse-specific access:
+Source code must use named constants/enums later, not raw numbers scattered
+inside controllers and services.
 
-```json
-{
-  "allowedWarehouseIds": "$user.warehouseIds"
-}
+## Scope Types
+
+| Scope   | Meaning                                                    |
+| ------- | ---------------------------------------------------------- |
+| ALL     | Global/system-level access. Use rarely.                    |
+| COMPANY | All allowed records inside the assigned company.           |
+| BRANCH  | Records inside selected branches.                          |
+| OWN     | Records created by or assigned to the current user.        |
+| CUSTOM  | JSON conditions decide access, such as amount/status/year. |
+
+`OWN` can still be branch-bound. Example:
+
+```text
+Ali can UPDATE proformas he owns in Tehran.
+Ali can READ all proformas in Shiraz.
 ```
 
-Allow work hours only:
+This is stored as two `UserRoleScope` records.
 
-```json
-{
-  "timeRange": {
-    "from": "08:00",
-    "to": "17:00"
-  }
-}
+## Model Responsibilities
+
+```text
+User
+  Identity only: phone, username, email, password hash, profile, status.
+
+Company
+  Legal/tenant context.
+
+Branch
+  Operational location under a company.
+
+System
+  Top-level ERP system such as SALES or FINANCE.
+
+Resource
+  Permission target inside a system, such as SALES_PROFORMA.
+
+Action
+  Operation such as READ, CREATE, UPDATE, APPROVE.
+
+Permission
+  Stable combination of systemCode + resourceCode + actionCode.
+
+Role
+  Company-scoped permission group.
+
+RolePermission
+  Join table between Role and Permission.
+
+UserRole
+  Assigns a role to a user inside a company.
+
+UserRoleScope
+  Defines where a UserRole is valid.
+
+UserRoleScopeBranch
+  Normalized branch list for branch-scoped access.
+
+UserPermissionOverride
+  Direct allow/deny exception for a user.
 ```
 
-## Permission Evaluation Order
+## Example
 
-Recommended order:
+Ali is a sales operator in Demo Company.
 
-1. If user is inactive, deny.
-2. If session is revoked, deny.
-3. If user is system super admin, allow.
-4. Load direct user permission overrides.
-5. Apply explicit deny overrides first.
-6. Load role permissions.
-7. Merge allowed scopes and conditions.
-8. Evaluate requested resource and action.
-9. Evaluate data scope.
-10. Evaluate JSONB conditions.
-11. Allow or deny.
+```text
+UserRole:
+  Ali -> SALES_OPERATOR -> Demo Company
 
-Explicit deny should beat allow.
+RolePermission:
+  SALES_OPERATOR -> 2.1001.1
+  SALES_OPERATOR -> 2.1001.2
+  SALES_OPERATOR -> 2.1001.3
+
+UserRoleScope:
+  2.1001.3 -> OWN -> Tehran
+  2.1001.1 -> BRANCH -> Shiraz
+  2.1001.2 -> BRANCH -> Tehran, Shiraz
+```
+
+Result:
+
+```text
+Ali can update only his own proformas in Tehran.
+Ali can read all proformas in Shiraz.
+Ali can create proformas in Tehran and Shiraz.
+```
 
 ## Route-Level Usage
 
 Target decorator:
 
 ```ts
-@RequirePermission('sales.invoice.approve')
+@RequireAccess({
+  systemCode: 2,
+  resourceCode: 1001,
+  actionCode: 1,
+})
 ```
 
-Controller example:
+Later, after the contracts package:
 
 ```ts
-@Post(':id/approve')
-@UseGuards(JwtAuthGuard, PermissionGuard)
-@RequirePermission('sales.invoice.approve')
-approve(@Param('id') id: string) {
-  return this.invoiceService.approve(id);
-}
+@RequireAccess({
+  systemCode: SystemCode.SALES,
+  resourceCode: ResourceCode.SALES_PROFORMA,
+  actionCode: ActionCode.READ,
+})
 ```
 
-## Service-Level Usage
+The decorator only stores metadata. `AccessGuard` and a future
+`PermissionService` perform the real database check before the controller runs.
 
-Routes are not enough. Services also need policy checks for data access.
+## Permission Evaluation Order
 
-Example:
+Recommended order:
 
-```ts
-const decision = await this.policyService.check(user, {
-  permission: 'sales.invoice.update',
-  entity: invoice,
-});
+1. Validate access token and auth session.
+2. Load user.
+3. Deny if user is inactive, unverified when verification is required, or soft-deleted.
+4. Load requested company/branch context from headers or route context.
+5. Deny if company or branch is inactive.
+6. Load active `UserRole` records for user + company.
+7. Load active roles and role permissions.
+8. Apply explicit `DENY` overrides first.
+9. Check role permission or explicit `ALLOW` override.
+10. Check `UserRoleScope` or override scope.
+11. Check branch list when scope is `BRANCH` or branch-bound `OWN`.
+12. Check owner when scope is `OWN`.
+13. Check JSON conditions for `CUSTOM` or amount/status limits.
+14. Allow or deny.
 
-if (!decision.allowed) {
-  throw new ForbiddenException(decision.reason);
-}
-```
+Explicit deny always beats allow.
 
-For list endpoints, the policy service should produce a query filter:
+## Frontend Ability Shape
 
-```ts
-const filter = await this.policyService.buildFilter(user, {
-  permission: 'sales.invoice.read',
-});
-```
+Frontend receives compact effective abilities only for UI decisions:
 
-Example filters:
-
-```ts
-// own
+```json
 {
-  createdById: user.id;
-}
-
-// branch
-{
-  branchId: user.branchId;
-}
-
-// company
-{
-  companyId: user.companyId;
+  "abilities": {
+    "2.1001.1": {
+      "branch": ["branch_tehran", "branch_shiraz"]
+    },
+    "2.1001.3": {
+      "own": ["branch_tehran"]
+    }
+  }
 }
 ```
 
-## Admin Panel Requirements
+Frontend hidden buttons are not security. Backend guards and service policy
+checks are the source of truth.
 
-The admin panel should support:
+## Phase 1 Seed
 
-- Create role.
-- Assign permissions to role.
-- Pick scope for each permission.
-- Add JSON conditions when scope is custom.
-- Assign multiple roles to a user.
-- Add direct user allow/deny overrides.
-- See effective permissions for a user.
-- Audit every role/permission change.
-
-## Default Security Rules
-
-- No public role endpoints.
-- No public permission endpoints.
-- No hard delete without `*.hard_delete`.
-- No export without `*.export`.
-- No approval without `*.approve`.
-- Do not trust frontend-hidden buttons as authorization.
-- Backend guards and policy checks are the source of truth.
-
-## Seed Permissions
-
-Minimum seed example:
-
-```text
-iam.user.read
-iam.user.create
-iam.user.update
-iam.user.delete
-iam.role.read
-iam.role.create
-iam.role.update
-iam.role.delete
-iam.permission.read
-iam.permission.assign
-organization.company.read
-organization.branch.read
-organization.department.read
-sales.customer.read
-sales.customer.create
-sales.customer.update
-sales.pre_invoice.read
-sales.pre_invoice.create
-sales.pre_invoice.update
-sales.pre_invoice.approve
-sales.pre_invoice.reject
-sales.pre_invoice.convert_to_invoice
-sales.invoice.read
-sales.invoice.create
-sales.invoice.update
-sales.invoice.approve
-sales.invoice.cancel
-sales.invoice.export
-sales.invoice.hard_delete
-inventory.product.read
-inventory.product.create
-inventory.product.update
-inventory.product.delete
-inventory.product.hard_delete
-```
-
-## Phase 1 Test Permissions
-
-For the first implementation phase, do not seed the full ERP permission catalog.
-Seed only enough metadata to test authentication and authorization.
-
-Recommended Phase 1 seed:
+Phase 1 seeds only auth/authorization metadata:
 
 ```text
 company: Demo Company
-branch: Tehran Branch
+branches:
+  Tehran Branch
+  Shiraz Branch
 
-subsystem:
-  test_sales
+systems:
+  FINANCE = 1
+  SALES = 2
+  INVENTORY = 3
+  IAM = 90
 
-resource:
-  test_invoice
+resources:
+  1000 SALES_INVOICE
+  1001 SALES_PROFORMA
+  1003 SALES_CENTER
 
 actions:
-  read
-  create
-  approve
-
-scopes:
-  own
-  branch
-  company
-  all
-
-permissions:
-  test_sales.test_invoice.read
-  test_sales.test_invoice.create
-  test_sales.test_invoice.approve
+  READ, CREATE, UPDATE, SOFT_DELETE, HARD_DELETE, APPROVE, REJECT,
+  CANCEL, PRINT, EXPORT, SUBMIT
 
 roles:
-  test_admin
-  test_sales_operator
-  test_branch_manager
+  TEST_ADMIN
+  SALES_OPERATOR
+  BRANCH_MANAGER
 ```
 
 Seed users:
@@ -383,25 +334,4 @@ Default seed password:
 
 ```text
 Passw0rd!123
-```
-
-Override the password with:
-
-```env
-SEED_USER_PASSWORD=your_password
-```
-
-Example role permission setup:
-
-```text
-test_sales_operator:
-  test_sales.test_invoice.read      scope: own
-  test_sales.test_invoice.create    scope: branch
-
-test_branch_manager:
-  test_sales.test_invoice.read      scope: branch
-  test_sales.test_invoice.approve   scope: branch
-
-test_admin:
-  all test permissions              scope: all
 ```

@@ -1,0 +1,41 @@
+model Company {
+  id         String    @id @default(cuid())
+  name       String
+  legalName  String?   @map("legal_name")
+  nationalId String?   @unique @map("national_id")
+  isActive   Boolean   @default(true) @map("is_active")
+  settings   Json      @default("{}")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  branches            Branch[]
+  roles               Role[]
+  userRoles           UserRole[]
+  permissionOverrides UserPermissionOverride[]
+  auditLogs           AuditLog[]
+
+  @@map("companies")
+}
+
+model Branch {
+  id        String    @id @default(cuid())
+  companyId String    @map("company_id")
+  code      String?
+  name      String
+  city      String?
+  address   String?   @db.Text
+  phone     String?
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  company          Company                        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  scopeBranches    UserRoleScopeBranch[]
+  overrideBranches UserPermissionOverrideBranch[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("branches")
+}

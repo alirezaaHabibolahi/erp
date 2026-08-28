@@ -11,9 +11,10 @@ architecture.
 | Framework             | NestJS 11                             |
 | Language              | TypeScript                            |
 | Package manager       | Yarn 1.22.22                          |
-| Database              | MongoDB with Mongoose                 |
+| Database              | PostgreSQL with Prisma 7              |
+| Prisma runtime        | `@prisma/adapter-pg`                  |
 | Cache/session support | Redis                                 |
-| Auth                  | Passport JWT + refresh token sessions |
+| Auth                  | Old runtime removed; Prisma IAM next  |
 | API docs              | Swagger                               |
 | Validation            | class-validator + Nest ValidationPipe |
 | Common library        | `libs/common`                         |
@@ -24,6 +25,8 @@ architecture.
 src/main.ts
 src/app.module.ts
 libs/common/src/modules/common.module.ts
+prisma.config.ts
+prisma/schema/
 ```
 
 `src/main.ts` creates the Nest application, enables CORS, configures Swagger,
@@ -34,17 +37,9 @@ filtering.
 
 - `ConfigModule`
 - `CommonModule`
-- `AuthModule`
-
-These modules are imported but currently commented:
-
-- `UsersModule`
-- `AccessModule`
-- `RoleModule`
 
 `CommonModule` is marked as global and imports many cross-cutting modules:
 
-- Database
 - Redis
 - SMS
 - File
@@ -59,16 +54,13 @@ These modules are imported but currently commented:
 
 ```text
 src/
-  access/
   auth/
+    dto/
   config/
   decorators/
   guards/
-  role/
   sms/
-  strategies/
   types/
-  users/
   app.controller.ts
   app.module.ts
   app.service.ts
@@ -79,6 +71,7 @@ libs/common/src/
   constants/
   context/
   database/
+    postgres/
   decorators/
   dto/
   filters/
@@ -97,78 +90,49 @@ libs/common/src/
 
 Path: `src/auth`
 
-Responsibilities:
+Current status:
 
-- Signup by phone
-- Login by phone/password
-- OTP verification
-- Refresh token rotation
-- Logout
-- JWT token generation
-- Refresh token session validation
-
-Current issue:
-
-- All auth controller routes are commented out.
-- JWT payload contains role and access names directly, which can become stale.
-- Access lists in JWT will become too large for ERP-scale permissions.
+- Old auth runtime was removed because it depended on the deleted legacy data
+  layer.
+- `src/auth/dto` remains as reusable input/output DTOs for the next
+  Prisma-based auth runtime.
+- New login, refresh, logout, JWT strategy, and session logic must be rebuilt on
+  top of Prisma tables.
 
 ### Users
 
-Path: `src/users`
+Previous path: `src/users`
 
-Responsibilities:
+Current status:
 
-- Create user
-- List users
-- Update current user
-- Register user profile info
-- Generate OTP and send SMS
-
-Current issue:
-
-- `POST /users` is not guarded.
-- Hard delete exists in repository.
-- User belongs to one role only in the current model.
-- There is no company/branch/department ownership yet.
+- Removed.
+- User persistence now exists only in the Prisma schema until the new IAM users
+  module is implemented.
+- The next users module should live under the IAM boundary. `User` is identity
+  only; company and branch context must come from role assignments and scopes.
 
 ### Role
 
-Path: `src/role`
+Previous path: `src/role`
 
-Responsibilities:
+Current status:
 
-- Create role
-- List roles
-- Get role
-- Update role
-- Delete role
-
-Current issue:
-
-- Module is not enabled in `AppModule`.
-- Controller has no guards.
-- Role model only contains `fa_name`, `en_name`, and an array of access ids.
-- This is not enough for granular ERP access control.
+- Removed.
+- Role persistence now exists only in the Prisma schema until the new IAM roles
+  module is implemented.
+- New role APIs must support role permissions. User-specific data boundaries
+  must be handled by `UserRoleScope`.
 
 ### Access
 
-Path: `src/access`
+Previous path: `src/access`
 
-Responsibilities:
+Current status:
 
-- Create access
-- List accesses
-- Get access
-- Update access
-- Delete access
-
-Current issue:
-
-- Module is not enabled in `AppModule`.
-- Controller has no guards.
-- Access model only contains `fa_name` and `en_name`.
-- It does not model subsystem, resource, action, scope, or conditions.
+- Removed.
+- Access persistence is replaced by the Prisma permission catalog:
+  system/resource/action plus role scopes.
+- New permission APIs must be built on the Prisma schema.
 
 ### SMS
 
@@ -190,7 +154,9 @@ Path: `libs/common`
 
 Responsibilities:
 
-- Database connection and model registry
+- Prisma module/service under `libs/common/src/database/postgres`
+- Prisma 7 datasource and migration settings in `prisma.config.ts`
+- Multi-file Prisma schema under `prisma/schema`
 - Redis services and locks
 - Messages and translations
 - Exception filters
@@ -217,7 +183,7 @@ HTTP request
   -> guard/decorator if route uses it
   -> service
   -> repository
-  -> MongoDB model
+  -> Prisma model
   -> response interceptor
   -> exception filter if error
 ```
@@ -241,8 +207,9 @@ Current decorators:
 
 Current limitations:
 
-- Role guard checks string role names.
-- Access guard checks access strings from `request.user.accesses`.
+- Role guard is deprecated and should not be used for new ERP authorization.
+- Access guard now reads `@RequireAccess(...)` metadata, but the database-backed
+  permission evaluation service is not implemented yet.
 - There is no scoped data filtering.
 - There is no condition evaluation.
 - There is no policy service that can be reused by services, queries, and jobs.
@@ -258,9 +225,9 @@ Current limitations:
 
 ## What Should Change
 
-- Replace MongoDB/Mongoose with PostgreSQL/Prisma for target ERP data.
+- Continue building Prisma modules for target ERP data.
 - Move from simple role/access to IAM/RBAC/ABAC.
-- Add company, branch, department, and user organization context.
+- Resolve company and branch context through `UserRole` and `UserRoleScope`.
 - Add audit logs for security and business actions.
 - Add soft delete by default.
 - Guard admin endpoints before enabling them.

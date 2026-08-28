@@ -48,7 +48,11 @@ Example:
 
 ```ts
 @Post()
-@RequirePermission('sales.invoice.create')
+@RequireAccess({
+  systemCode: 2,
+  resourceCode: 1000,
+  actionCode: 2,
+})
 create(@CurrentUser() user: CurrentUserDto, @Body() dto: CreateInvoiceDto) {
   return this.invoicesService.create(user, dto);
 }
@@ -102,9 +106,9 @@ invoices.controller.ts
 Permissions:
 
 ```text
-sales.invoice.read
-sales.invoice.create
-sales.invoice.update
+2.1000.1 = SALES_INVOICE.READ
+2.1000.2 = SALES_INVOICE.CREATE
+2.1000.3 = SALES_INVOICE.UPDATE
 ```
 
 Database columns:
@@ -134,7 +138,7 @@ deleted_by_id = current_user.id
 
 Hard delete requires:
 
-- Explicit `*.hard_delete` permission.
+- Explicit `HARD_DELETE` permission.
 - Audit log.
 - Business reason if the table is sensitive.
 

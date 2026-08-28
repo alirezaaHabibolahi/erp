@@ -19,15 +19,18 @@ This document describes the intended ERP backend architecture.
 src/
   main.ts
   app.module.ts
+  prisma.config.ts
+
+  prisma/
+    schema/
+      00-base.prisma
+      organization.prisma
+      iam.prisma
+      audit.prisma
 
   config/
     env.schema.ts
     general.ts
-
-  database/
-    prisma.module.ts
-    prisma.service.ts
-    transaction.ts
 
   common/
     decorators/
@@ -37,6 +40,13 @@ src/
     pipes/
     pagination/
     types/
+
+libs/common/src/
+  database/
+    postgres/
+      prisma.module.ts
+      prisma.service.ts
+      transaction.ts
 
   iam/
     auth/
@@ -127,9 +137,9 @@ Access tokens should contain only stable identity claims:
 ```json
 {
   "sub": "user_id",
-  "companyId": "company_id",
   "sessionId": "session_id",
-  "isAdmin": false
+  "phone": "09120000001",
+  "tokenType": "access"
 }
 ```
 
@@ -139,7 +149,7 @@ Do not store the full permission matrix inside access tokens.
 
 ```text
 route metadata
-  -> required permission code
+  -> required access codes
   -> policy service
   -> load user roles and overrides
   -> resolve permission result
@@ -150,7 +160,11 @@ route metadata
 Example route metadata:
 
 ```ts
-@RequirePermission('sales.invoice.approve')
+@RequireAccess({
+  systemCode: 2,
+  resourceCode: 1000,
+  actionCode: 6,
+})
 ```
 
 The policy service should return a structured result:
@@ -158,7 +172,7 @@ The policy service should return a structured result:
 ```ts
 type PolicyDecision = {
   allowed: boolean;
-  scope: 'own' | 'branch' | 'department' | 'company' | 'all' | 'custom';
+  scope: 'OWN' | 'BRANCH' | 'COMPANY' | 'ALL' | 'CUSTOM';
   conditions?: Record<string, unknown>;
   reason?: string;
 };
@@ -170,6 +184,10 @@ Use Prisma as the default data layer.
 
 Guidelines:
 
+- Keep Prisma 7 connection and migration configuration in `prisma.config.ts`.
+- Keep Prisma schema split by backend domain under `prisma/schema`.
+- Use PostgreSQL driver adapter `@prisma/adapter-pg` when constructing
+  `PrismaClient`.
 - Use explicit `select` for list endpoints.
 - Use transactions for multi-table writes.
 - Use soft delete filters by default.
@@ -200,8 +218,8 @@ actor_user_id
 action
 entity_type
 entity_id
-before
-after
+old_values
+new_values
 metadata
 ip_address
 user_agent

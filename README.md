@@ -3,33 +3,35 @@
 This repository is the backend codebase for a modular ERP system built with
 NestJS and TypeScript.
 
-The current codebase is an early backend foundation. It already contains auth,
-users, roles, accesses, SMS, Redis, file/excel utilities, and a MongoDB-based
-data layer. The target architecture is a PostgreSQL + Prisma ERP backend with a
-dynamic IAM/RBAC/ABAC permission system.
+The current codebase is an early backend foundation. It keeps SMS, Redis,
+file/excel utilities, and a PostgreSQL + Prisma data layer. The old
+auth/users/roles/accesses runtime was removed and will be rebuilt on the Prisma
+IAM foundation. The target architecture is a PostgreSQL + Prisma ERP backend
+with a dynamic IAM/RBAC/ABAC permission system.
 
 ## Current Status
 
 - Framework: NestJS 11 + TypeScript
 - Package manager: Yarn 1.22.22
-- Current database layer: MongoDB/Mongoose
-- Target database layer: PostgreSQL + Prisma
+- Database layer: PostgreSQL + Prisma
+- Prisma version: 7.10.0 with `prisma.config.ts` and PostgreSQL driver adapter
 - Prisma foundation: added for auth and permission tables only
-- Current auth: JWT + refresh token session model
-- Current access model: simple role/access list
+- Current auth runtime: old implementation removed; Prisma-based auth is next
+- Current access runtime: old implementation removed; Prisma-based permissions are next
 - Target access model: subsystem/resource/action/scope/condition
 - Documentation root: [docs](./docs/README.md)
 
 Important current notes:
 
-- Auth routes in `src/auth/auth.controller.ts` are currently commented out.
-- `UsersModule`, `AccessModule`, and `RoleModule` are commented out in
-  `src/app.module.ts`.
-- `RoleController` and `AccessController` do not have guards if they are enabled.
-- MongoDB models exist under `libs/common/src/database/schemas/models`.
-- Prisma files exist under `prisma` and `src/database`.
-- The new Prisma module is not imported into `AppModule` yet, so the current
-  Mongo runtime is not broken while the auth/permission migration is in progress.
+- Old auth/users/role/access modules were removed because they depended on the
+  deleted legacy data layer.
+- `src/auth` currently only keeps reusable DTOs for the next auth runtime.
+- Prisma schema files exist under `prisma/schema`; Nest database services live
+  under `libs/common/src/database/postgres`.
+- Prisma 7 reads database connection settings from `prisma.config.ts`; the
+  datasource block in `prisma/schema/00-base.prisma` only defines the provider.
+- The Prisma module is not imported into `AppModule` yet. It should be imported
+  by the new Prisma-based IAM modules as they are implemented.
 
 ## Documentation Map
 
@@ -38,7 +40,6 @@ Read these files before changing architecture or adding ERP modules:
 - [Documentation Home](./docs/README.md)
 - [Current Backend Architecture](./docs/architecture/01-current-backend.md)
 - [Target Backend Architecture](./docs/architecture/02-target-backend-architecture.md)
-- [Current MongoDB Models](./docs/database/01-current-mongodb-models.md)
 - [Target PostgreSQL and Prisma Schema](./docs/database/02-target-postgresql-prisma-schema.md)
 - [IAM, RBAC, ABAC, Permissions](./docs/iam/01-iam-rbac-abac.md)
 - [ERP Module Documentation Template](./docs/modules/00-module-template.md)
@@ -104,18 +105,12 @@ yarn test
 
 ## Required Environment Variables
 
-The current MongoDB-based runtime needs at least:
+The current PostgreSQL/Prisma runtime needs at least:
 
 ```env
 PORT=3000
 
 DATABASE_URL=postgresql://erp_user:erp_password@localhost:5432/erp?schema=public
-DIRECT_URL=postgresql://erp_user:erp_password@localhost:5432/erp?schema=public
-
-DATABASE_MONGO_URL=mongodb://127.0.0.1:27017
-DATABASE_MONGO_NAME=erp
-DATABASE_MONGO_USER=
-DATABASE_MONGO_PASS=
 
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379

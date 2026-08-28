@@ -1,9 +1,3 @@
-export interface MongoOption {
-  user: string;
-  pass: string;
-  dbName: string;
-}
-
 export interface RateLimiterOptions {
   points: number;
   duration: number;
@@ -33,5 +27,3 @@ export interface PaginatedResult<T> {
   totalPages: number;
   message?: string;
 }
-
-

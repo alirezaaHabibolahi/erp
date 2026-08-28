@@ -7,7 +7,6 @@ import {
   ZipModule,
 } from '@app/common';
 import { SmsModule } from '../../../../src/sms/sms.module';
-import { DatabaseModule } from '@app/common/database/db.module';
 import { RedisModule } from '@app/common/redis/redis.module';
 import { SmsService } from '../../../../src/sms/sms.service';
 import { FileModule } from '@app/common/services/fileService/file.module';
@@ -17,7 +16,6 @@ import { ImageModule } from '@app/common/services/imageService/image.module';
 @Global()
 @Module({
   imports: [
-    DatabaseModule.forRoot(),
     RedisModule,
     SmsModule,
     FileModule,
@@ -26,14 +24,10 @@ import { ImageModule } from '@app/common/services/imageService/image.module';
     ExcelModule,
     MulterModule,
     ImageModule,
-    DownloadModule
+    DownloadModule,
   ],
-  providers: [
-    MessageService,
-    SmsService
-  ],
+  providers: [MessageService, SmsService],
   exports: [
-    DatabaseModule.forRoot(),
     RedisModule,
     FileModule,
     ApiModule,
@@ -46,5 +40,4 @@ import { ImageModule } from '@app/common/services/imageService/image.module';
     MessageService,
   ],
 })
-export class CommonModule {
-}
+export class CommonModule {}
