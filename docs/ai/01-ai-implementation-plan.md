@@ -14,6 +14,11 @@ making code changes.
 - Do not implement new ERP features on top of deleted legacy data-access code.
 - Do not hardcode role checks such as `user.role === 'admin'` for new ERP code.
 - Do not store the full permission matrix inside JWT tokens.
+- Do not reintroduce express-session for API auth; use JWT plus
+  `auth_sessions`.
+- Do not reintroduce string role decorators such as `@Roles(...)`.
+- Keep `src/config/general.ts` limited to active runtime config; add
+  feature-specific config only when that feature module is implemented.
 - Use PostgreSQL + Prisma for new target data models.
 - Keep each phase small enough to build and verify.
 - Update docs when code changes.
@@ -189,6 +194,8 @@ Tasks:
 - Implement auth sessions with refresh token hash.
 - Implement login, refresh, logout.
 - Create auth controller routes safely.
+- Mark public auth routes with `@Public()`.
+- Use `JwtAuthGuard` from `src/guards/jwt-auth.guard.ts`.
 - Implement permission catalog access.
 - Implement `PolicyService`.
 - Implement `PermissionGuard`.

@@ -109,20 +109,23 @@ The current PostgreSQL/Prisma runtime needs at least:
 
 ```env
 PORT=3000
+TRUST_PROXY=false
+CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 
 DATABASE_URL=postgresql://erp_user:erp_password@localhost:5432/erp?schema=public
 
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6379
 REDIS_URL=redis://127.0.0.1:6379
+RATE_LIMIT_MAX=100
+RATE_LIMIT_TTL_SECONDS=60
 
-SESSION_SECRET=change_me
-JWT_SECRET=change_me
-JWT_ACCESS_SECRET=change_me
-JWT_REFRESH_SECRET=change_me
-JWT_EXPIRES_IN=1d
-JWT_ACCESS_SECRET_EXPIRE_TIME=1d
-JWT_REFRESH_SECRET_EXPIRE_TIME=7d
+JWT_ACCESS_SECRET=replace_me_with_at_least_32_chars_access_secret
+JWT_REFRESH_SECRET=replace_me_with_at_least_32_chars_refresh_secret
+JWT_ACCESS_TOKEN_TTL=15m
+JWT_REFRESH_TOKEN_TTL=7d
+
+SMS_PROVIDER=smsir
 
 SEED_USER_PASSWORD=Passw0rd!123
 ```

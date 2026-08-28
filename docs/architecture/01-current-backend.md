@@ -5,19 +5,19 @@ architecture.
 
 ## Stack
 
-| Area                  | Current choice                        |
-| --------------------- | ------------------------------------- |
-| Runtime               | Node.js                               |
-| Framework             | NestJS 11                             |
-| Language              | TypeScript                            |
-| Package manager       | Yarn 1.22.22                          |
-| Database              | PostgreSQL with Prisma 7              |
-| Prisma runtime        | `@prisma/adapter-pg`                  |
-| Cache/session support | Redis                                 |
-| Auth                  | Old runtime removed; Prisma IAM next  |
-| API docs              | Swagger                               |
-| Validation            | class-validator + Nest ValidationPipe |
-| Common library        | `libs/common`                         |
+| Area             | Current choice                        |
+| ---------------- | ------------------------------------- |
+| Runtime          | Node.js                               |
+| Framework        | NestJS 11                             |
+| Language         | TypeScript                            |
+| Package manager  | Yarn 1.22.22                          |
+| Database         | PostgreSQL with Prisma 7              |
+| Prisma runtime   | `@prisma/adapter-pg`                  |
+| Cache/rate limit | Redis                                 |
+| Auth             | Old runtime removed; Prisma IAM next  |
+| API docs         | Swagger                               |
+| Validation       | class-validator + Nest ValidationPipe |
+| Common library   | `libs/common`                         |
 
 ## Main Entry Points
 
@@ -37,6 +37,20 @@ filtering.
 
 - `ConfigModule`
 - `CommonModule`
+
+`ConfigModule` loads `src/config/general.ts`, which currently exposes only
+current runtime configuration:
+
+```text
+app
+redis
+rateLimit
+jwt
+sms
+```
+
+Legacy StuffId/import-specific config was removed until a real tax/import
+module needs it again.
 
 `CommonModule` is marked as global and imports many cross-cutting modules:
 
@@ -177,7 +191,6 @@ HTTP request
   -> main.ts Nest app
   -> cookie parser
   -> language middleware
-  -> express-session using Redis
   -> global validation pipe
   -> controller
   -> guard/decorator if route uses it
@@ -193,21 +206,20 @@ HTTP request
 Current guards:
 
 - `JwtAuthGuard`
-- `RoleAuthGuard`
 - `AccessGuard`
 - `RateLimitGuard`
 
 Current decorators:
 
-- `@Roles(...)`
-- `@Access(...)`
+- `@Public()`
+- `@RequireAccess(...)`
 - `@RateLimit(...)`
 - `@CurrentUser()`
 - `@ResponseMessage(...)`
 
 Current limitations:
 
-- Role guard is deprecated and should not be used for new ERP authorization.
+- String role guards and decorators were removed.
 - Access guard now reads `@RequireAccess(...)` metadata, but the database-backed
   permission evaluation service is not implemented yet.
 - There is no scoped data filtering.

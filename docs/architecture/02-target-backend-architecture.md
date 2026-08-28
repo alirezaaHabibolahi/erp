@@ -122,6 +122,10 @@ authenticated request
   -> load current user state if required
   -> attach user context to request
 
+public route
+  -> @Public()
+  -> skip JwtAuthGuard
+
 refresh
   -> verify refresh token
   -> check current session hash
@@ -195,6 +199,21 @@ Guidelines:
 - Use database constraints for unique business codes.
 - Use JSONB only for dynamic conditions or metadata, not for core relational
   ERP data.
+
+## Configuration
+
+Runtime config should stay grouped and minimal:
+
+```text
+app
+redis
+rateLimit
+jwt
+sms
+```
+
+Feature-specific config, such as tax/StuffId, import jobs, storage, or report
+export settings, should be introduced only with the module that owns it.
 
 ## Auditing
 

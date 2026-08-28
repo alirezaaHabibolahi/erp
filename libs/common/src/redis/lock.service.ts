@@ -14,7 +14,7 @@ export class RedisLock {
 
   private async initialize() {
     const redisClients = await this.redis.connectWithRetry(
-      generalConfig().redisUrl,
+      generalConfig().redis.url,
     );
     const redlock = new Redlock([redisClients]);
     this._redLock = redlock;

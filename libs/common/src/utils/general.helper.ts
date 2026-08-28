@@ -1,12 +1,16 @@
+import { randomInt } from 'node:crypto';
+
 export class GeneralHelper {
   static defaultLimit = 10;
   static defaultSkip = 0;
   static defaultSort: 1 | -1 = -1;
 
   static generateOtp(length = 5): string {
-    const min = Math.pow(10, length - 1);
-    const max = Math.pow(10, length) - 1;
-    return Math.floor(min + Math.random() * (max - min + 1)).toString();
+    const digits = Math.max(4, Math.min(length, 10));
+    const min = 10 ** (digits - 1);
+    const max = 10 ** digits;
+
+    return String(randomInt(min, max));
   }
 
   static generateOtpExpiration(minutes = 2): Date {

@@ -1,59 +1,109 @@
 import * as process from 'node:process';
 
+type NodeEnv = 'development' | 'test' | 'staging' | 'production';
+type SmsProviderName = 'smsir' | 'kavenegar';
+
 const positiveInteger = (value: string | undefined, fallback: number) => {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-export const generalConfig = () => ({
-  mode: process.env.NODE_ENV || 'development',
-  port: Number(process.env.PORT) || 3000,
+const booleanEnv = (value: string | undefined, fallback = false) => {
+  if (!value) return fallback;
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
+};
 
-  sessionStoreUrl:
-    process.env.REDIS_URL ||
-    'redis://' + process.env.REDIS_HOST + ':' + process.env.REDIS_PORT,
-  redisUrl: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
-  rateLimit: {
-    default: {
-      name: 'global',
-      limit: positiveInteger(process.env.RATE_LIMIT_MAX, 100),
-      ttl: positiveInteger(process.env.RATE_LIMIT_TTL_SECONDS, 60),
+const stringListEnv = (value: string | undefined) =>
+  value
+    ?.split(',')
+    .map((item) => item.trim())
+    .filter(Boolean) ?? [];
+
+const nodeEnv = (): NodeEnv => {
+  const value = process.env.NODE_ENV;
+  if (
+    value === 'production' ||
+    value === 'staging' ||
+    value === 'test' ||
+    value === 'development'
+  ) {
+    return value;
+  }
+
+  return 'development';
+};
+
+const redisUrl = () => {
+  if (process.env.REDIS_URL) {
+    return process.env.REDIS_URL;
+  }
+
+  const host = process.env.REDIS_HOST || '127.0.0.1';
+  const port = process.env.REDIS_PORT || '6379';
+  return `redis://${host}:${port}`;
+};
+
+const secretEnv = (name: string, isProduction: boolean) => {
+  const value = process.env[name]?.trim();
+  const normalized = value?.toLowerCase();
+  const isPlaceholder =
+    !normalized ||
+    normalized === 'change_me' ||
+    normalized.includes('replace_me');
+
+  if (isPlaceholder && isProduction) {
+    throw new Error(`${name} is required in production.`);
+  }
+
+  if (isPlaceholder) {
+    return `dev-only-${name.toLowerCase().replaceAll('_', '-')}`;
+  }
+
+  return value;
+};
+
+const smsProvider = (): SmsProviderName => {
+  const provider = (process.env.SMS_PROVIDER || 'smsir').toLowerCase();
+
+  if (provider === 'smsir' || provider === 'kavenegar') {
+    return provider;
+  }
+
+  return 'smsir';
+};
+
+export const generalConfig = () => {
+  const env = nodeEnv();
+  const isProduction = env === 'production';
+
+  return {
+    app: {
+      env,
+      isProduction,
+      port: positiveInteger(process.env.PORT, 3000),
+      trustProxy: booleanEnv(process.env.TRUST_PROXY),
+      corsOrigins: stringListEnv(process.env.CORS_ORIGINS),
     },
-  },
-  sessionOptions: {
-    resave: false,
-    saveUninitialized: false,
-    secret: process.env.SESSION_SECRET ?? 'QSmpgXkG2c',
-    cookie: {
-      maxAge: 5 * 60000,
-      httpOnly: false,
+    redis: {
+      url: redisUrl(),
     },
-    key: 'user_sid',
-  },
-  worker_number: process.env.WORKER_NUMBER
-    ? Number(process.env.WORKER_NUMBER)
-    : 1,
+    rateLimit: {
+      default: {
+        name: 'global',
+        limit: positiveInteger(process.env.RATE_LIMIT_MAX, 100),
+        ttl: positiveInteger(process.env.RATE_LIMIT_TTL_SECONDS, 60),
+      },
+    },
+    jwt: {
+      accessSecret: secretEnv('JWT_ACCESS_SECRET', isProduction),
+      refreshSecret: secretEnv('JWT_REFRESH_SECRET', isProduction),
+      accessTokenTtl: process.env.JWT_ACCESS_TOKEN_TTL || '15m',
+      refreshTokenTtl: process.env.JWT_REFRESH_TOKEN_TTL || '7d',
+    },
+    sms: {
+      provider: smsProvider(),
+    },
+  };
+};
 
-  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET,
-  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET,
-  JWT_ACCESS_SECRET_EXPIRE_TIME:
-    String(process.env.JWT_ACCESS_SECRET_EXPIRE_TIME) || '2d',
-  JWT_REFRESH_SECRET_EXPIRE_TIME:
-    String(process.env.JWT_REFRESH_SECRET_EXPIRE_TIME) || '7d',
-
-  JWT_SECRET: process.env.JWT_SECRET,
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
-
-  SMS_PROVIDER: process.env.SMS_PROVIDER || 'smsir',
-
-  STUFFID_URL:
-    process.env.STUFFID_URL || 'https://stuffid.tax.gov.ir/portal-gateway',
-  STUFFID_DOWNLOAD_FILE_URL:
-    process.env.STUFFID_DOWNLOAD_FILE_URL ||
-    '/upload/gs/api/v1/fileupload/download/stream/',
-  STUFFID_FILE_LIST_URL:
-    process.env.STUFFID_FILE_LIST_URL || '/StuffRate/gs/graphql',
-
-  EXCEL_CHUNK_SIZE: Number(process.env.EXCEL_CHUNK_SIZE || 10000),
-  DB_BATCH_SIZE: Number(process.env.DB_BATCH_SIZE || 5000),
-});
+export type GeneralConfig = ReturnType<typeof generalConfig>;

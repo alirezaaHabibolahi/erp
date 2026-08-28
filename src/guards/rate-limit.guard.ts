@@ -57,7 +57,7 @@ export class RateLimitGuard implements CanActivate {
     const key = `rate-limit:v1:${config.name ?? handlerName}:${fingerprint}`;
 
     const client = await this.redisService.connectWithRetry(
-      generalConfig().redisUrl,
+      generalConfig().redis.url,
     );
     const [count, ttl] = (await client.eval(
       COUNTER_SCRIPT,
