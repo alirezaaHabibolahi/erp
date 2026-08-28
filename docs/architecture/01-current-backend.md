@@ -5,19 +5,21 @@ architecture.
 
 ## Stack
 
-| Area             | Current choice                        |
-| ---------------- | ------------------------------------- |
-| Runtime          | Node.js                               |
-| Framework        | NestJS 11                             |
-| Language         | TypeScript                            |
-| Package manager  | Yarn 1.22.22                          |
-| Database         | PostgreSQL with Prisma 7              |
-| Prisma runtime   | `@prisma/adapter-pg`                  |
-| Cache/rate limit | Redis                                 |
-| Auth             | Old runtime removed; Prisma IAM next  |
-| API docs         | Swagger                               |
-| Validation       | class-validator + Nest ValidationPipe |
-| Common library   | `libs/common`                         |
+| Area             | Current choice                                     |
+| ---------------- | -------------------------------------------------- |
+| Runtime          | Node.js                                            |
+| Framework        | NestJS 11                                          |
+| Language         | TypeScript                                         |
+| Package manager  | Yarn 1.22.22                                       |
+| Database         | PostgreSQL with Prisma 7                           |
+| Prisma runtime   | `@prisma/adapter-pg`                               |
+| Cache/rate limit | Redis                                              |
+| Auth             | Old runtime removed; Prisma IAM next               |
+| API docs         | Swagger                                            |
+| Validation       | class-validator + `I18nValidationPipe`             |
+| Common library   | `libs/common`                                      |
+| API envelope     | Global success interceptor + error filter          |
+| Language         | `?lang`, `X-Language`, `X-Lang`, `Accept-Language` |
 
 ## Main Entry Points
 
@@ -30,13 +32,19 @@ prisma/schema/
 ```
 
 `src/main.ts` creates the Nest application, enables CORS, configures Swagger,
-adds cookie parsing, global validation, response interception, and exception
-filtering.
+and adds cookie parsing.
 
 `src/app.module.ts` imports:
 
 - `ConfigModule`
 - `CommonModule`
+
+It also registers global cross-cutting providers through Nest DI:
+
+- `APP_FILTER` -> `AllExceptionsFilter`
+- `APP_INTERCEPTOR` -> `ResponseInterceptor`
+- `APP_PIPE` -> `I18nValidationPipe`
+- `APP_GUARD` -> `RateLimitGuard`
 
 `ConfigModule` loads `src/config/general.ts`, which currently exposes only
 current runtime configuration:
@@ -190,16 +198,78 @@ Current issue:
 HTTP request
   -> main.ts Nest app
   -> cookie parser
-  -> language middleware
+  -> language middleware and request context
+  -> global guards
+  -> global response interceptor before handler
   -> global validation pipe
   -> controller
-  -> guard/decorator if route uses it
   -> service
   -> repository
   -> Prisma model
-  -> response interceptor
+  -> global response interceptor after handler
   -> exception filter if error
 ```
+
+## Current Response, Error, and Language Handling
+
+Successful controller returns are wrapped globally:
+
+```json
+{
+  "success": true,
+  "message": "Successful request.",
+  "data": {},
+  "meta": {
+    "requestId": "...",
+    "path": "/api/path",
+    "method": "GET",
+    "timestamp": "2026-08-28T00:00:00.000Z",
+    "language": "en",
+    "statusCode": 200
+  }
+}
+```
+
+Errors are normalized globally:
+
+```json
+{
+  "success": false,
+  "message": "Validation failed for one or more fields.",
+  "code": "VALIDATION_FAILED",
+  "data": null,
+  "errors": [
+    {
+      "field": "phone",
+      "messages": ["Phone number must be 11 digits and start with 0."]
+    }
+  ],
+  "meta": {
+    "requestId": "...",
+    "path": "/api/path",
+    "method": "POST",
+    "timestamp": "2026-08-28T00:00:00.000Z",
+    "language": "en",
+    "statusCode": 400
+  }
+}
+```
+
+Language is detected in this order:
+
+```text
+?lang
+X-Language
+X-Lang
+Accept-Language
+DEFAULT_LANGUAGE
+```
+
+Supported languages currently live in `libs/common/src/constants/messages`.
+Adding a new language should require adding the translation file and including
+it in `select-language.ts`. The request middleware stores language and
+requestId in `RequestContext`, sets `Content-Language`, and returns
+`X-Request-Id`.
 
 ## Current Access Enforcement
 
@@ -234,6 +304,7 @@ Current limitations:
 - Provider pattern for SMS
 - Common reusable services if dependencies become explicit
 - Response and exception standardization
+- Centralized message translation through `MessageService`
 
 ## What Should Change
 
@@ -245,3 +316,4 @@ Current limitations:
 - Guard admin endpoints before enabling them.
 - Avoid storing large permission arrays inside JWT access tokens.
 - Stop using global coupling for every shared service.
+- Keep API response, error, and language handling centralized and DI-based.

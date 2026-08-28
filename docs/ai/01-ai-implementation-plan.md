@@ -19,6 +19,10 @@ making code changes.
 - Do not reintroduce string role decorators such as `@Roles(...)`.
 - Keep `src/config/general.ts` limited to active runtime config; add
   feature-specific config only when that feature module is implemented.
+- Keep global response, error, validation, and language handling centralized in
+  DI-registered providers.
+- Use `MessageKey` and `MessageService` for user-facing API messages instead of
+  hardcoded controller or guard strings.
 - Use PostgreSQL + Prisma for new target data models.
 - Keep each phase small enough to build and verify.
 - Update docs when code changes.
@@ -54,10 +58,11 @@ Status:
 
 ```text
 In progress. Prisma 7 packages, prisma.config.ts, schema, seed,
-docker-compose, env example, and Nest Prisma module/service have been added.
-The IAM schema now uses identity-only users, numeric permission codes, role
-assignments, and role scopes. The first database migration still needs to be
-created and run against a live PostgreSQL database.
+docker-compose, env example, Nest Prisma module/service, and centralized
+response/error/language handling have been added. The IAM schema now uses
+identity-only users, numeric permission codes, role assignments, and role
+scopes. The first database migration still needs to be created and run against a
+live PostgreSQL database.
 ```
 
 Goal:
@@ -83,6 +88,7 @@ Tasks:
 - Add first migration for minimal organization context and IAM tables.
 - Add seed script for test company, branches, systems, resources, actions,
   permissions, roles, users, role assignments, and role scopes. Done.
+- Standardize global response, error, validation, and language handling. Done.
 - Add one or two protected test routes to verify permission checks.
 
 Initial tables:
@@ -166,6 +172,12 @@ prisma/seed.ts
 libs/common/src/database/postgres/index.ts
 libs/common/src/database/postgres/prisma.module.ts
 libs/common/src/database/postgres/prisma.service.ts
+libs/common/src/context/request-context.ts
+libs/common/src/middlewares/language.middleware.ts
+libs/common/src/services/messageService/message.service.ts
+libs/common/src/interceptors/response.interceptor.ts
+libs/common/src/filters/all-exceptions.filter.ts
+libs/common/src/pipe/validation.pipe.ts
 ```
 
 Useful commands:

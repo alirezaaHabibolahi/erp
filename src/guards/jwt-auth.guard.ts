@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
+import { MessageKey } from '@app/common/constants';
 
 import { IS_PUBLIC_ROUTE_KEY } from '../decorators/public.decorator';
 
@@ -29,7 +30,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
   handleRequest<TUser>(error: unknown, user: TUser): TUser {
     if (error || !user) {
-      throw new UnauthorizedException('Authentication is required.');
+      throw new UnauthorizedException({
+        code: 'AUTHENTICATION_REQUIRED',
+        message: MessageKey.AUTH_UNAUTHORIZED,
+      });
     }
 
     return user;

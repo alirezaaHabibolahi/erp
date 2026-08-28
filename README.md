@@ -19,6 +19,7 @@ with a dynamic IAM/RBAC/ABAC permission system.
 - Current auth runtime: old implementation removed; Prisma-based auth is next
 - Current access runtime: old implementation removed; Prisma-based permissions are next
 - Target access model: subsystem/resource/action/scope/condition
+- API shape: centralized success/error envelopes with requestId and language metadata
 - Documentation root: [docs](./docs/README.md)
 
 Important current notes:
@@ -32,6 +33,8 @@ Important current notes:
   datasource block in `prisma/schema/00-base.prisma` only defines the provider.
 - The Prisma module is not imported into `AppModule` yet. It should be imported
   by the new Prisma-based IAM modules as they are implemented.
+- Global response, error, validation, and language handling are registered in
+  `AppModule` through Nest DI providers.
 
 ## Documentation Map
 

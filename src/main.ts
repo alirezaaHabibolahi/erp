@@ -1,15 +1,9 @@
-import { NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
 
 import { Logger } from '@nestjs/common';
 import { setupSwagger } from './swagger';
-import {
-  AllExceptionsFilter,
-  MessageService,
-  ResponseInterceptor,
-} from '@app/common';
 import { generalConfig } from './config/general';
 
 async function bootstrap() {
@@ -20,16 +14,20 @@ async function bootstrap() {
   // trusted reverse proxy. This keeps client IP based limits non-spoofable.
   app.getHttpAdapter().getInstance().set('trust proxy', config.app.trustProxy);
 
-  const reflector = app.get(Reflector);
-  const messageService = app.get(MessageService);
-
   app.enableCors({
     origin: config.app.corsOrigins.length
       ? config.app.corsOrigins
       : !config.app.isProduction,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Content-Disposition'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept-Language',
+      'X-Lang',
+      'X-Language',
+      'X-Request-Id',
+    ],
+    exposedHeaders: ['Content-Disposition', 'Content-Language', 'X-Request-Id'],
     credentials: true,
     maxAge: 86400,
   });
@@ -37,19 +35,6 @@ async function bootstrap() {
   setupSwagger(app);
 
   app.use(cookieParser());
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-    }),
-  );
-
-  // Global response interceptor
-  app.useGlobalInterceptors(new ResponseInterceptor(reflector, messageService));
-
-  // Global handle error filter
-  app.useGlobalFilters(new AllExceptionsFilter(messageService));
 
   const PORT = config.app.port;
   await app.listen(PORT);

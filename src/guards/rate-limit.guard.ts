@@ -9,6 +9,7 @@ import { Reflector } from '@nestjs/core';
 import { RedisService } from '@app/common/redis/redis.service';
 import { createHash } from 'node:crypto';
 import type { Request, Response } from 'express';
+import { MessageKey } from '@app/common/constants';
 
 import {
   RATE_LIMIT_METADATA,
@@ -79,8 +80,9 @@ export class RateLimitGuard implements CanActivate {
       response.setHeader('Retry-After', retryAfter);
       throw new HttpException(
         {
-          statusCode: HttpStatus.TOO_MANY_REQUESTS,
-          message: 'Too many requests. Please try again later.',
+          code: 'RATE_LIMIT_EXCEEDED',
+          data: { retryAfter },
+          message: MessageKey.GENERAL_TOO_MANY_REQUESTS,
         },
         HttpStatus.TOO_MANY_REQUESTS,
       );

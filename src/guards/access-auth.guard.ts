@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { MessageKey } from '@app/common/constants';
 import {
   REQUIRED_ACCESS_KEY,
   RequiredAccess,
@@ -27,11 +28,15 @@ export class AccessGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     if (!request?.user) {
-      throw new UnauthorizedException('Authentication is required.');
+      throw new UnauthorizedException({
+        code: 'AUTHENTICATION_REQUIRED',
+        message: MessageKey.AUTH_UNAUTHORIZED,
+      });
     }
 
-    throw new ForbiddenException(
-      'Access evaluation service is not implemented yet.',
-    );
+    throw new ForbiddenException({
+      code: 'ACCESS_POLICY_NOT_IMPLEMENTED',
+      message: MessageKey.GENERAL_FORBIDDEN,
+    });
   }
 }

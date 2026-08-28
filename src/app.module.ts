@@ -3,9 +3,11 @@ import { ConfigModule } from '@nestjs/config';
 import {
   AllExceptionsFilter,
   CommonModule,
+  I18nValidationPipe,
   LanguageMiddleware,
+  ResponseInterceptor,
 } from '@app/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -27,6 +29,14 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ResponseInterceptor,
+    },
+    {
+      provide: APP_PIPE,
+      useClass: I18nValidationPipe,
     },
     {
       provide: APP_GUARD,

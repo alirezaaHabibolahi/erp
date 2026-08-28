@@ -1,18 +1,30 @@
-import { AsyncLocalStorage } from 'async_hooks';
-import { LanguageCode } from '@app/common';
+import { AsyncLocalStorage } from 'node:async_hooks';
+import {
+  DEFAULT_LANGUAGE,
+  LanguageCode,
+} from '@app/common/constants/messages/select-language';
 
-interface RequestStore {
-    lang: LanguageCode;
+export interface RequestStore {
+  lang: LanguageCode;
+  requestId: string;
 }
 
 const asyncLocalStorage = new AsyncLocalStorage<RequestStore>();
 
 export class RequestContext {
-    static run(lang: LanguageCode, callback: () => void) {
-        asyncLocalStorage.run({ lang }, callback);
-    }
+  static run(store: RequestStore, callback: () => void): void {
+    asyncLocalStorage.run(store, callback);
+  }
 
-    static getLang(): LanguageCode {
-        return asyncLocalStorage.getStore()?.lang || 'en';
-    }
+  static getStore(): RequestStore | undefined {
+    return asyncLocalStorage.getStore();
+  }
+
+  static getLang(): LanguageCode {
+    return asyncLocalStorage.getStore()?.lang || DEFAULT_LANGUAGE;
+  }
+
+  static getRequestId(): string | undefined {
+    return asyncLocalStorage.getStore()?.requestId;
+  }
 }

@@ -96,6 +96,8 @@ libs/common/src/
 
 ```text
 HTTP request
+  -> language and request context
+  -> rate limit
   -> validation and transformation
   -> authentication guard
   -> permission/policy guard
@@ -255,10 +257,23 @@ Target API errors should be consistent:
   "success": false,
   "message": "Permission denied",
   "code": "PERMISSION_DENIED",
-  "details": {},
-  "requestId": "..."
+  "data": null,
+  "errors": null,
+  "meta": {
+    "requestId": "...",
+    "path": "/api/path",
+    "method": "POST",
+    "timestamp": "2026-08-28T00:00:00.000Z",
+    "language": "en",
+    "statusCode": 403
+  }
 }
 ```
+
+Controllers and services should throw errors with stable `code` values and
+translation keys from `MessageKey`. The global exception filter owns HTTP
+response shape and language translation. Unknown internal errors must not expose
+raw messages in production.
 
 ## Success Response
 
@@ -267,10 +282,15 @@ Target API success response:
 ```json
 {
   "success": true,
-  "message": "OK",
+  "message": "Successful request.",
   "data": {},
   "meta": {
-    "requestId": "..."
+    "requestId": "...",
+    "path": "/api/path",
+    "method": "GET",
+    "timestamp": "2026-08-28T00:00:00.000Z",
+    "language": "en",
+    "statusCode": 200
   }
 }
 ```
@@ -280,8 +300,10 @@ For paginated lists:
 ```json
 {
   "success": true,
+  "message": "Successful request.",
   "data": [],
   "meta": {
+    "requestId": "...",
     "page": 1,
     "limit": 20,
     "total": 100,
@@ -289,6 +311,20 @@ For paginated lists:
   }
 }
 ```
+
+## Language Handling
+
+The backend should keep a small internal i18n layer until a larger translation
+workflow is needed. The active design is:
+
+- Message keys live in `MessageKey`.
+- Translation objects live under `libs/common/src/constants/messages`.
+- `MessageService` resolves nested message keys and falls back to the default
+  language.
+- `LanguageMiddleware` detects language from query/header values and stores it
+  in async request context.
+- Frontend clients can send `X-Language` or `Accept-Language`; backend responses
+  expose `Content-Language` and `X-Request-Id`.
 
 ## Deployment Services
 
