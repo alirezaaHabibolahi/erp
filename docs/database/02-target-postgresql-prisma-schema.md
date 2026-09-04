@@ -141,25 +141,25 @@ Users are not directly attached to branches.
 
 `User` is identity only.
 
-| Field               | Type        | Notes                                     |
-| ------------------- | ----------- | ----------------------------------------- |
-| id                  | string      | primary key                               |
-| phone               | string      | globally unique login identifier          |
-| username            | string      | globally unique when present              |
-| email               | string      | globally unique when present              |
-| password_hash       | string      | optional to support OTP-first onboarding  |
-| first_name          | string      | optional                                  |
-| last_name           | string      | optional                                  |
-| display_name        | string      | optional                                  |
-| avatar_url          | text        | optional                                  |
-| is_verified         | boolean     | default false                             |
-| is_active           | boolean     | default true                              |
-| settings            | jsonb       | user preferences, not authorization scope |
-| last_login_at       | timestamptz | optional                                  |
-| password_changed_at | timestamptz | optional; used to invalidate old sessions |
-| created_at          | timestamptz | required                                  |
-| updated_at          | timestamptz | required                                  |
-| deleted_at          | timestamptz | soft delete marker                        |
+| Field               | Type        | Notes                                        |
+| ------------------- | ----------- | -------------------------------------------- |
+| id                  | string      | primary key                                  |
+| phone               | string      | globally unique; used for SMS recovery       |
+| username            | string      | globally unique login identifier             |
+| email               | string      | globally unique when present                 |
+| password_hash       | string      | optional column; required for password login |
+| first_name          | string      | optional                                     |
+| last_name           | string      | optional                                     |
+| display_name        | string      | optional                                     |
+| avatar_url          | text        | optional                                     |
+| is_verified         | boolean     | default false                                |
+| is_active           | boolean     | default true                                 |
+| settings            | jsonb       | user preferences, not authorization scope    |
+| last_login_at       | timestamptz | optional                                     |
+| password_changed_at | timestamptz | optional; used to invalidate old sessions    |
+| created_at          | timestamptz | required                                     |
+| updated_at          | timestamptz | required                                     |
+| deleted_at          | timestamptz | soft delete marker                           |
 
 `users` intentionally does not contain `company_id`, `branch_id`, membership, or
 `is_super_admin`.

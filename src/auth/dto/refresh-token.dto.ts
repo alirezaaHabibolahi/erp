@@ -11,8 +11,8 @@ export class RefreshTokenDto {
   sessionId: string;
 
   @ApiProperty({
-    description: 'Refresh token returned by login or token refresh',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: 'Opaque refresh token returned by login or token refresh',
+    example: '8f28d8f5...128_hex_characters',
   })
   @IsString()
   @IsNotEmpty()

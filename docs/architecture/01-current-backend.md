@@ -14,7 +14,7 @@ architecture.
 | Database         | PostgreSQL with Prisma 7                           |
 | Prisma runtime   | `@prisma/adapter-pg`                               |
 | Cache/rate limit | Redis                                              |
-| Auth             | Old runtime removed; Prisma IAM next               |
+| Auth             | Username/password, JWT sessions, SMS reset OTP     |
 | API docs         | Swagger                                            |
 | Validation       | class-validator + `I18nValidationPipe`             |
 | Common library   | `libs/common`                                      |
@@ -38,6 +38,7 @@ and adds cookie parsing.
 
 - `ConfigModule`
 - `CommonModule`
+- `AuthModule`
 
 It also registers global cross-cutting providers through Nest DI:
 
@@ -45,6 +46,7 @@ It also registers global cross-cutting providers through Nest DI:
 - `APP_INTERCEPTOR` -> `ResponseInterceptor`
 - `APP_PIPE` -> `I18nValidationPipe`
 - `APP_GUARD` -> `RateLimitGuard`
+- `APP_GUARD` -> `JwtAuthGuard`
 
 `ConfigModule` loads `src/config/general.ts`, which currently exposes only
 current runtime configuration:
@@ -78,6 +80,13 @@ module needs it again.
 src/
   auth/
     dto/
+    interfaces/
+    strategies/
+    auth.controller.ts
+    auth.module.ts
+    auth.service.ts
+    auth-session.service.ts
+    password-reset.service.ts
   config/
   decorators/
   guards/
@@ -114,12 +123,16 @@ Path: `src/auth`
 
 Current status:
 
-- Old auth runtime was removed because it depended on the deleted legacy data
-  layer.
-- `src/auth/dto` remains as reusable input/output DTOs for the next
-  Prisma-based auth runtime.
-- New login, refresh, logout, JWT strategy, and session logic must be rebuilt on
-  top of Prisma tables.
+- Prisma-based username/password login is implemented.
+- Access JWTs are linked to database-backed `AuthSession` rows.
+- Opaque refresh tokens rotate atomically; only their hashes are persisted.
+- Logout revokes the current session.
+- Forgot-password uses phone/SMS OTP with Redis TTL, cooldown, and attempt
+  limits.
+- Password reset revokes all active sessions.
+- Public signup is intentionally not implemented.
+
+See [Authentication and Sessions](../iam/02-authentication-and-sessions.md).
 
 ### Users
 
@@ -199,7 +212,8 @@ HTTP request
   -> main.ts Nest app
   -> cookie parser
   -> language middleware and request context
-  -> global guards
+  -> global rate-limit guard
+  -> global JWT guard unless @Public()
   -> global response interceptor before handler
   -> global validation pipe
   -> controller
@@ -295,6 +309,8 @@ Current limitations:
 - There is no scoped data filtering.
 - There is no condition evaluation.
 - There is no policy service that can be reused by services, queries, and jobs.
+- Authentication is usable, but authorization routes still wait for the policy
+  engine.
 
 ## What Should Stay
 

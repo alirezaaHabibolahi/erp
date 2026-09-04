@@ -8,7 +8,6 @@ import {
 } from '@app/common';
 import { SmsModule } from '../../../../src/sms/sms.module';
 import { RedisModule } from '@app/common/redis/redis.module';
-import { SmsService } from '../../../../src/sms/sms.service';
 import { FileModule } from '@app/common/services/fileService/file.module';
 import { MulterModule } from '@app/common/services/multerService/multer.module';
 import { ImageModule } from '@app/common/services/imageService/image.module';
@@ -26,7 +25,7 @@ import { ImageModule } from '@app/common/services/imageService/image.module';
     ImageModule,
     DownloadModule,
   ],
-  providers: [MessageService, SmsService],
+  providers: [MessageService],
   exports: [
     RedisModule,
     FileModule,

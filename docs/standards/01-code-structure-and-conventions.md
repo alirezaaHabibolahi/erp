@@ -44,6 +44,10 @@ Controllers should:
 - Avoid business logic.
 - Avoid direct Prisma/database calls.
 
+Authentication is fail-closed: `JwtAuthGuard` is global. Only login, refresh,
+password recovery, health, or other deliberately public routes may use
+`@Public()`.
+
 Example:
 
 ```ts
@@ -185,6 +189,10 @@ Minimum tests for important modules:
 - Policy tests for permission scopes and conditions.
 - Repository tests for filters and soft delete behavior.
 - E2E tests for critical flows such as login and invoice approval.
+
+Authentication tests must verify generic credential errors, refresh-token
+rotation, revoked sessions, OTP attempt limits, and session revocation after a
+password reset.
 
 ## Documentation Rules
 

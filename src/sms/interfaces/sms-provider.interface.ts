@@ -1,12 +1,14 @@
 export interface SmsPayload {
-    to: string;
-    message: string;
-    templateId?: number;
-    token?:string;
-    params?: Record<string, any>[];
-    options?: Record<string, any>
+  to: string;
+  message: string;
+  templateId?: number;
+  params?: Array<{ name: string; value: string }>;
+  options?: {
+    token?: string;
+    template?: string;
+  };
 }
 
 export interface SmsProvider {
-    sendSms(payload: SmsPayload): Promise<any>;
+  sendSms(payload: SmsPayload): Promise<unknown>;
 }

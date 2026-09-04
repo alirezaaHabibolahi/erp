@@ -61,8 +61,9 @@ In progress. Prisma 7 packages, prisma.config.ts, schema, seed,
 docker-compose, env example, Nest Prisma module/service, and centralized
 response/error/language handling have been added. The IAM schema now uses
 identity-only users, numeric permission codes, role assignments, and role
-scopes. The first database migration still needs to be created and run against a
-live PostgreSQL database.
+scopes. Username/password auth, JWT sessions, refresh rotation, logout, and SMS
+OTP password reset are implemented. The first database migration still needs to
+be created and run against a live PostgreSQL database.
 ```
 
 Goal:
@@ -89,6 +90,9 @@ Tasks:
 - Add seed script for test company, branches, systems, resources, actions,
   permissions, roles, users, role assignments, and role scopes. Done.
 - Standardize global response, error, validation, and language handling. Done.
+- Implement username/password login and JWT session runtime. Done.
+- Implement atomic refresh rotation and logout. Done.
+- Implement phone/SMS OTP password reset with Redis. Done.
 - Add one or two protected test routes to verify permission checks.
 
 Initial tables:
@@ -178,6 +182,12 @@ libs/common/src/services/messageService/message.service.ts
 libs/common/src/interceptors/response.interceptor.ts
 libs/common/src/filters/all-exceptions.filter.ts
 libs/common/src/pipe/validation.pipe.ts
+src/auth/auth.module.ts
+src/auth/auth.controller.ts
+src/auth/auth.service.ts
+src/auth/auth-session.service.ts
+src/auth/password-reset.service.ts
+src/auth/strategies/jwt.strategy.ts
 ```
 
 Useful commands:
@@ -192,6 +202,14 @@ yarn db:seed
 
 ## Phase 2 - Auth Runtime and Policy Engine
 
+Status:
+
+```text
+Authentication runtime is implemented and unit-tested. Permission catalog
+queries, PolicyService, AccessGuard integration, and protected authorization
+test routes remain.
+```
+
 Goal:
 
 ```text
@@ -200,20 +218,21 @@ Make authentication and authorization usable in the running NestJS app.
 
 Tasks:
 
-- Implement users table access through Prisma.
+- Implement users table access through Prisma. Done for authentication.
 - Implement request company/branch context through role assignments and scopes.
-- Implement password hash and OTP fields.
-- Implement auth sessions with refresh token hash.
-- Implement login, refresh, logout.
-- Create auth controller routes safely.
-- Mark public auth routes with `@Public()`.
-- Use `JwtAuthGuard` from `src/guards/jwt-auth.guard.ts`.
+- Implement password hash and Redis OTP recovery. Done.
+- Implement auth sessions with refresh token hash. Done.
+- Implement login, refresh, logout. Done.
+- Create auth controller routes safely. Done.
+- Mark public auth routes with `@Public()`. Done.
+- Register `JwtAuthGuard` globally with fail-closed defaults. Done.
 - Implement permission catalog access.
 - Implement `PolicyService`.
 - Implement `PermissionGuard`.
 - Implement `@RequireAccess(...)`.
 - Add test authorization endpoints.
-- Add tests for login and refresh token rotation.
+- Add tests for login and refresh token rotation. Done.
+- Add tests for phone/SMS OTP password reset. Done.
 
 Done when:
 

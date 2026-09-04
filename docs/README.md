@@ -19,6 +19,7 @@ docs/
     02-target-postgresql-prisma-schema.md
   iam/
     01-iam-rbac-abac.md
+    02-authentication-and-sessions.md
   modules/
     00-module-template.md
     01-sales-invoice-flow.md
@@ -36,7 +37,8 @@ For a new developer:
 2. Read [Current Backend Architecture](./architecture/01-current-backend.md).
 3. Read [Target Backend Architecture](./architecture/02-target-backend-architecture.md).
 4. Read [IAM, RBAC, ABAC](./iam/01-iam-rbac-abac.md).
-5. Read the module doc for the area you are changing.
+5. Read [Authentication and Sessions](./iam/02-authentication-and-sessions.md).
+6. Read the module doc for the area you are changing.
 
 For AI-assisted implementation:
 

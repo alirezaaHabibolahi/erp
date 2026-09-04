@@ -4,10 +4,10 @@ This repository is the backend codebase for a modular ERP system built with
 NestJS and TypeScript.
 
 The current codebase is an early backend foundation. It keeps SMS, Redis,
-file/excel utilities, and a PostgreSQL + Prisma data layer. The old
-auth/users/roles/accesses runtime was removed and will be rebuilt on the Prisma
-IAM foundation. The target architecture is a PostgreSQL + Prisma ERP backend
-with a dynamic IAM/RBAC/ABAC permission system.
+file/excel utilities, and a PostgreSQL + Prisma data layer. Username/password
+authentication, JWT access tokens, rotating refresh sessions, and SMS OTP
+password recovery are implemented on the Prisma IAM foundation. The target
+authorization architecture is a dynamic IAM/RBAC/ABAC permission system.
 
 ## Current Status
 
@@ -15,9 +15,10 @@ with a dynamic IAM/RBAC/ABAC permission system.
 - Package manager: Yarn 1.22.22
 - Database layer: PostgreSQL + Prisma
 - Prisma version: 7.10.0 with `prisma.config.ts` and PostgreSQL driver adapter
-- Prisma foundation: added for auth and permission tables only
-- Current auth runtime: old implementation removed; Prisma-based auth is next
-- Current access runtime: old implementation removed; Prisma-based permissions are next
+- Prisma foundation: auth, organization context, permission, and audit tables
+- Current auth runtime: username/password login, JWT, session rotation/logout,
+  and phone/SMS OTP password reset
+- Current access runtime: policy evaluation and permission guard are next
 - Target access model: subsystem/resource/action/scope/condition
 - API shape: centralized success/error envelopes with requestId and language metadata
 - Documentation root: [docs](./docs/README.md)
@@ -25,14 +26,13 @@ with a dynamic IAM/RBAC/ABAC permission system.
 Important current notes:
 
 - Old auth/users/role/access modules were removed because they depended on the
-  deleted legacy data layer.
-- `src/auth` currently only keeps reusable DTOs for the next auth runtime.
+  deleted legacy data layer. `src/auth` is now the Prisma-based auth runtime.
 - Prisma schema files exist under `prisma/schema`; Nest database services live
   under `libs/common/src/database/postgres`.
 - Prisma 7 reads database connection settings from `prisma.config.ts`; the
   datasource block in `prisma/schema/00-base.prisma` only defines the provider.
-- The Prisma module is not imported into `AppModule` yet. It should be imported
-  by the new Prisma-based IAM modules as they are implemented.
+- `AuthModule` imports the Prisma, Redis, Passport/JWT, and SMS dependencies.
+- `JwtAuthGuard` is global; routes are private unless marked with `@Public()`.
 - Global response, error, validation, and language handling are registered in
   `AppModule` through Nest DI providers.
 
@@ -45,6 +45,7 @@ Read these files before changing architecture or adding ERP modules:
 - [Target Backend Architecture](./docs/architecture/02-target-backend-architecture.md)
 - [Target PostgreSQL and Prisma Schema](./docs/database/02-target-postgresql-prisma-schema.md)
 - [IAM, RBAC, ABAC, Permissions](./docs/iam/01-iam-rbac-abac.md)
+- [Authentication and Sessions](./docs/iam/02-authentication-and-sessions.md)
 - [ERP Module Documentation Template](./docs/modules/00-module-template.md)
 - [Sales Invoice Flow](./docs/modules/01-sales-invoice-flow.md)
 - [Code Structure and Conventions](./docs/standards/01-code-structure-and-conventions.md)
@@ -124,11 +125,22 @@ RATE_LIMIT_MAX=100
 RATE_LIMIT_TTL_SECONDS=60
 
 JWT_ACCESS_SECRET=replace_me_with_at_least_32_chars_access_secret
-JWT_REFRESH_SECRET=replace_me_with_at_least_32_chars_refresh_secret
+AUTH_PASSWORD_RESET_OTP_SECRET=replace_me_with_at_least_32_chars_otp_secret
+JWT_ISSUER=erp-backend
+JWT_AUDIENCE=erp-client
 JWT_ACCESS_TOKEN_TTL=15m
 JWT_REFRESH_TOKEN_TTL=7d
 
+AUTH_PASSWORD_RESET_OTP_LENGTH=6
+AUTH_PASSWORD_RESET_OTP_TTL_SECONDS=120
+AUTH_PASSWORD_RESET_OTP_COOLDOWN_SECONDS=60
+AUTH_PASSWORD_RESET_OTP_MAX_ATTEMPTS=5
+
 SMS_PROVIDER=smsir
+SMS_IR_API_KEY=
+KAVENEGAR_API_KEY=
+SMS_PASSWORD_RESET_TEMPLATE_ID=
+SMS_PASSWORD_RESET_TEMPLATE_NAME=erp-password-reset
 
 SEED_USER_PASSWORD=Passw0rd!123
 ```
@@ -140,9 +152,9 @@ Target PostgreSQL variables are documented in
 
 The recommended order is:
 
-1. Build Auth, roles, permissions, scopes, and policy guard on the Prisma
-   foundation.
-2. Verify authentication and authorization with test protected routes.
+1. Build the role/permission/scope policy service and permission guard on the
+   working authentication foundation.
+2. Verify authorization with protected test routes.
 3. Keep small test organization data such as company, branch, subsystem, resource,
    action, permission, and role.
 4. Start ERP business modules only after auth and permissions are stable.

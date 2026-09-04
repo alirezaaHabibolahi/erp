@@ -1,5 +1,5 @@
 import { extname } from 'path';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 
 export interface GenerateFileNameOptions {
   originalName: string;
@@ -9,28 +9,18 @@ export interface GenerateFileNameOptions {
 }
 
 export class FileNameUtil {
-
   /**
    * Generate a safe filename.
    */
-  static generate(
-    options: GenerateFileNameOptions,
-  ): string {
-
+  static generate(options: GenerateFileNameOptions): string {
     const extension = extname(options.originalName);
 
     let name: string;
 
     if (options.preserveOriginalName) {
-
-      name = this.sanitize(
-        options.originalName.replace(extension, ''),
-      );
-
+      name = this.sanitize(options.originalName.replace(extension, ''));
     } else {
-
-      name = uuid();
-
+      name = randomUUID();
     }
 
     if (options.prefix) {
@@ -42,22 +32,19 @@ export class FileNameUtil {
     }
 
     return `${name}${extension.toLowerCase()}`;
-
   }
 
   /**
    * Remove invalid filename characters.
    */
-  static sanitize(
-    value: string,
-  ): string {
-
+  static sanitize(value: string): string {
     return value
       .trim()
-      .replace(/[<>:"/\\|?*\x00-\x1F]/g, '')
+      .split('')
+      .filter((character) => character.charCodeAt(0) > 31)
+      .join('')
+      .replace(/[<>:"/\\|?*]/g, '')
       .replace(/\s+/g, '_')
       .replace(/_+/g, '_');
-
   }
-
 }

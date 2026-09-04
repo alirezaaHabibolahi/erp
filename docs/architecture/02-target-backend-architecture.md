@@ -112,8 +112,8 @@ HTTP request
 ## Authentication Flow
 
 ```text
-signup/login
-  -> validate credentials or OTP
+login
+  -> validate normalized username and password
   -> load active user
   -> create auth session
   -> issue access token and refresh token
@@ -129,13 +129,18 @@ public route
   -> skip JwtAuthGuard
 
 refresh
-  -> verify refresh token
+  -> hash and verify opaque refresh token
   -> check current session hash
-  -> rotate refresh token
+  -> atomically rotate refresh token
   -> issue new access token
 
 logout
   -> revoke current auth session
+
+forgot password
+  -> generate and hash SMS OTP in Redis
+  -> enforce TTL, cooldown, and attempt limit
+  -> update password and revoke all sessions
 ```
 
 Access tokens should contain only stable identity claims:
@@ -144,6 +149,7 @@ Access tokens should contain only stable identity claims:
 {
   "sub": "user_id",
   "sessionId": "session_id",
+  "username": "test_admin",
   "phone": "09120000001",
   "tokenType": "access"
 }

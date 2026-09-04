@@ -10,8 +10,8 @@ export class LoginResponseDto {
   accessToken: string;
 
   @ApiProperty({
-    description: 'JWT refresh token',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    description: 'Opaque refresh token',
+    example: '8f28d8f5...128_hex_characters',
   })
   @Expose()
   refreshToken: string;
@@ -29,6 +29,10 @@ export class LoginResponseDto {
   })
   @Expose()
   userId: string;
+
+  @ApiProperty({ description: 'Username', example: 'test_admin' })
+  @Expose()
+  username: string;
 
   @ApiProperty({ description: 'User phone number', example: '09123456789' })
   @Expose()

@@ -43,20 +43,29 @@ const redisUrl = () => {
   return `redis://${host}:${port}`;
 };
 
-const secretEnv = (name: string, isProduction: boolean) => {
+const secretEnv = (name: string, isProduction: boolean): string => {
   const value = process.env[name]?.trim();
-  const normalized = value?.toLowerCase();
-  const isPlaceholder =
-    !normalized ||
-    normalized === 'change_me' ||
-    normalized.includes('replace_me');
+  const fallback = `dev-only-${name.toLowerCase().replaceAll('_', '-')}`;
 
-  if (isPlaceholder && isProduction) {
-    throw new Error(`${name} is required in production.`);
+  if (!value) {
+    if (isProduction) {
+      throw new Error(`${name} is required in production.`);
+    }
+
+    return fallback;
   }
 
-  if (isPlaceholder) {
-    return `dev-only-${name.toLowerCase().replaceAll('_', '-')}`;
+  const normalized = value.toLowerCase();
+  if (normalized === 'change_me' || normalized.includes('replace_me')) {
+    if (isProduction) {
+      throw new Error(`${name} must not use a placeholder in production.`);
+    }
+
+    return fallback;
+  }
+
+  if (isProduction && value.length < 32) {
+    throw new Error(`${name} must contain at least 32 characters.`);
   }
 
   return value;
@@ -70,6 +79,11 @@ const smsProvider = (): SmsProviderName => {
   }
 
   return 'smsir';
+};
+
+const optionalPositiveInteger = (value: string | undefined) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 };
 
 export const generalConfig = () => {
@@ -96,12 +110,40 @@ export const generalConfig = () => {
     },
     jwt: {
       accessSecret: secretEnv('JWT_ACCESS_SECRET', isProduction),
-      refreshSecret: secretEnv('JWT_REFRESH_SECRET', isProduction),
+      issuer: process.env.JWT_ISSUER?.trim() || 'erp-backend',
+      audience: process.env.JWT_AUDIENCE?.trim() || 'erp-client',
       accessTokenTtl: process.env.JWT_ACCESS_TOKEN_TTL || '15m',
       refreshTokenTtl: process.env.JWT_REFRESH_TOKEN_TTL || '7d',
     },
+    auth: {
+      passwordResetOtpSecret: secretEnv(
+        'AUTH_PASSWORD_RESET_OTP_SECRET',
+        isProduction,
+      ),
+      passwordResetOtpLength: positiveInteger(
+        process.env.AUTH_PASSWORD_RESET_OTP_LENGTH,
+        6,
+      ),
+      passwordResetOtpTtlSeconds: positiveInteger(
+        process.env.AUTH_PASSWORD_RESET_OTP_TTL_SECONDS,
+        120,
+      ),
+      passwordResetOtpCooldownSeconds: positiveInteger(
+        process.env.AUTH_PASSWORD_RESET_OTP_COOLDOWN_SECONDS,
+        60,
+      ),
+      passwordResetOtpMaxAttempts: positiveInteger(
+        process.env.AUTH_PASSWORD_RESET_OTP_MAX_ATTEMPTS,
+        5,
+      ),
+    },
     sms: {
       provider: smsProvider(),
+      passwordResetTemplateId: optionalPositiveInteger(
+        process.env.SMS_PASSWORD_RESET_TEMPLATE_ID,
+      ),
+      passwordResetTemplateName:
+        process.env.SMS_PASSWORD_RESET_TEMPLATE_NAME || 'erp-password-reset',
     },
   };
 };

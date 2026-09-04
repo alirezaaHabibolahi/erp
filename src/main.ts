@@ -26,6 +26,7 @@ async function bootstrap() {
       'X-Lang',
       'X-Language',
       'X-Request-Id',
+      'X-Device-Name',
     ],
     exposedHeaders: ['Content-Disposition', 'Content-Language', 'X-Request-Id'],
     credentials: true,

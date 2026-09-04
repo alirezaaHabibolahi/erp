@@ -3,9 +3,21 @@ export const en = {
     INVALID_TOKEN: 'Invalid authentication token.',
     TOKEN_EXPIRED: 'Authentication token has expired.',
     UNAUTHORIZED: 'You are not authorized to perform this action.',
+    LOGIN_SUCCESS: 'Login completed successfully.',
+    REFRESH_SUCCESS: 'Token refreshed successfully.',
+    LOGOUT_SUCCESS: 'Logout completed successfully.',
     OTP_CODE: 'OTP code is resent successfully',
     OTP_CODE_IS_NOT_VALID: 'Otp is not valid or it is expired',
     PASS_OR_USERNAME_IS_INVALID: 'Username or password is not correct',
+    PASSWORD_RESET_OTP_SENT:
+      'If the phone number exists, a reset code will be sent by SMS.',
+    PASSWORD_RESET_SUCCESS: 'Password changed successfully.',
+    PASSWORD_RESET_OTP_INVALID: 'Reset code is invalid or expired.',
+    PASSWORD_RESET_OTP_THROTTLED:
+      'Please wait before requesting another reset code.',
+    PASSWORD_RESET_OTP_SMS: 'Your ERP password reset code is {code}.',
+    REFRESH_TOKEN_INVALID: 'Refresh token is invalid or expired.',
+    SESSION_REVOKED: 'Session is revoked.',
   },
   USER: {
     NOT_FOUND: 'User not found.',
@@ -41,18 +53,22 @@ export const en = {
   VALIDATION: {
     AUTH: {
       PASSWORD_STRING: 'Password must be a string.',
+      PASSWORD_REQUIRED: 'Password is required.',
       PASSWORD_MINLENGTH: 'Password must be at least 8 characters long.',
       PASSWORD_MAXLENGTH: 'Password cannot exceed 128 characters.',
       PASSWORD_COMPLEXITY:
         'Password must contain uppercase, lowercase, number, and special character.',
       PASSWORD_CONFIRM_STRING: 'Confirm password must be a string.',
       PASSWORD_MISMATCH: 'Password and confirm password do not match.',
+      OTP_STRING: 'OTP code must be a string.',
+      OTP_REQUIRED: 'OTP code is required.',
+      OTP_PATTERN: 'OTP code must contain only digits.',
     },
     USER: {
       USERNAME_STRING: 'Username must be a string.',
       USERNAME_REQUIRED: 'Username is required.',
       USERNAME_MINLENGTH: 'Username must be at least 3 characters long.',
-      USERNAME_MAXLENGTH: 'Username cannot exceed 20 characters.',
+      USERNAME_MAXLENGTH: 'Username cannot exceed 50 characters.',
       FIRSTNAME_STRING: 'First name must be a string.',
       FIRSTNAME_MAXLENGTH: 'First name cannot exceed 80 characters.',
       LASTNAME_STRING: 'Last name must be a string.',
