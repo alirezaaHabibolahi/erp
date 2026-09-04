@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '@app/common/database/postgres';
 import { CryptoHelper } from '@app/common/utils';
-import { MessageKey } from '@app/common/constants';
+import { ErrorCode, MessageKey } from '@app/common/constants';
 import { AuthRequestContext } from './interfaces';
 import { AuthSessionService } from './auth-session.service';
 import { LoginDto } from './dto';
@@ -91,9 +91,9 @@ export class AuthService {
   }
 
   private invalidCredentials(): UnauthorizedException {
-    return new UnauthorizedException({
-      code: 'AUTH_INVALID_CREDENTIALS',
-      message: MessageKey.AUTH_INVALID_PASS_USERNAME,
-    });
+    return new UnauthorizedException(
+      { message: MessageKey.AUTH_INVALID_PASS_USERNAME },
+      { errorCode: ErrorCode.AUTH_INVALID_CREDENTIALS },
+    );
   }
 }

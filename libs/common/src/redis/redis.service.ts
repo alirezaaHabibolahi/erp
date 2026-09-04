@@ -3,7 +3,7 @@ import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService {
-  private client: Redis;
+  private client?: Redis;
   private connection?: Promise<Redis>;
   private readonly logger = new Logger(RedisService.name);
 
@@ -15,7 +15,7 @@ export class RedisService {
       //this.logger.log('Redis client already exists');
       return this.client;
     }
-    this.client = new Redis(uri, {
+    const client = new Redis(uri, {
       retryStrategy: (times) => {
         const delay = Math.min(times * 3000, 30000);
         this.logger.warn(
@@ -25,26 +25,28 @@ export class RedisService {
       },
     });
 
-    this.client.on('ready', () => {
+    this.client = client;
+
+    client.on('ready', () => {
       this.logger.log('Redis client connected and ready');
     });
 
-    this.client.on('error', (err) => {
+    client.on('error', (err) => {
       this.logger.warn('Redis client error', err);
     });
 
-    this.client.on('close', () => {
+    client.on('close', () => {
       this.logger.warn('Redis connection closed');
     });
 
-    this.client.on('end', () => {
+    client.on('end', () => {
       this.logger.warn('Redis connection ended');
     });
 
     this.connection = new Promise<Redis>((resolve) => {
-      this.client.once('ready', () => {
+      client.once('ready', () => {
         this.connection = undefined;
-        resolve(this.client);
+        resolve(client);
       });
     });
 

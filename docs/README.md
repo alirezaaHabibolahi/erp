@@ -15,6 +15,7 @@ docs/
   architecture/
     01-current-backend.md
     02-target-backend-architecture.md
+    03-nestjs-12-platform.md
   database/
     02-target-postgresql-prisma-schema.md
   iam/
@@ -36,9 +37,10 @@ For a new developer:
 1. Read the root [README](../README.md).
 2. Read [Current Backend Architecture](./architecture/01-current-backend.md).
 3. Read [Target Backend Architecture](./architecture/02-target-backend-architecture.md).
-4. Read [IAM, RBAC, ABAC](./iam/01-iam-rbac-abac.md).
-5. Read [Authentication and Sessions](./iam/02-authentication-and-sessions.md).
-6. Read the module doc for the area you are changing.
+4. Read [NestJS 12 Platform Baseline](./architecture/03-nestjs-12-platform.md).
+5. Read [IAM, RBAC, ABAC](./iam/01-iam-rbac-abac.md).
+6. Read [Authentication and Sessions](./iam/02-authentication-and-sessions.md).
+7. Read the module doc for the area you are changing.
 
 For AI-assisted implementation:
 

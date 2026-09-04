@@ -1,23 +1,20 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import Redlock, { Lock, Settings } from 'redlock';
 import { RedisService } from './redis.service';
 import { generalConfig } from '../../../../src/config/general';
 
 @Injectable()
-export class RedisLock {
-  private _redLock: Redlock;
-  private locks = new Map<string, Lock>();
+export class RedisLock implements OnModuleInit {
+  private redLock?: Redlock;
+  private readonly locks = new Map<string, Lock>();
 
-  constructor(@Inject() private redis: RedisService) {
-    this.initialize();
-  }
+  constructor(@Inject() private readonly redis: RedisService) {}
 
-  private async initialize() {
+  async onModuleInit(): Promise<void> {
     const redisClients = await this.redis.connectWithRetry(
       generalConfig().redis.url,
     );
-    const redlock = new Redlock([redisClients]);
-    this._redLock = redlock;
+    this.redLock = new Redlock([redisClients]);
   }
 
   async acquireLock(
@@ -26,7 +23,7 @@ export class RedisLock {
     options: Partial<Settings>,
   ) {
     try {
-      const lock = await this._redLock.acquire(
+      const lock = await this.getRedLock().acquire(
         [resourceKey],
         duration,
         options,
@@ -64,5 +61,13 @@ export class RedisLock {
     } catch (e) {
       return false;
     }
+  }
+
+  private getRedLock(): Redlock {
+    if (!this.redLock) {
+      throw new Error('Redis lock service is not initialized');
+    }
+
+    return this.redLock;
   }
 }

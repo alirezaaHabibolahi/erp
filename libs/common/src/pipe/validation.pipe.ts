@@ -4,7 +4,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
-import { MessageKey } from '@app/common/constants';
+import { ErrorCode, MessageKey } from '@app/common/constants';
 
 export type ValidationErrorDetail = {
   field: string;
@@ -42,11 +42,13 @@ export class I18nValidationPipe extends ValidationPipe {
       transform: true,
       forbidUnknownValues: false,
       exceptionFactory: (errors: ValidationError[]) =>
-        new BadRequestException({
-          code: 'VALIDATION_FAILED',
-          message: MessageKey.GENERAL_VALIDATION_FAILED,
-          errors: flattenValidationErrors(errors),
-        }),
+        new BadRequestException(
+          {
+            message: MessageKey.GENERAL_VALIDATION_FAILED,
+            errors: flattenValidationErrors(errors),
+          },
+          { errorCode: ErrorCode.VALIDATION_FAILED },
+        ),
     });
   }
 }

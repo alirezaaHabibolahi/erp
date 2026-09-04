@@ -1,14 +1,15 @@
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
+import { vi } from 'vitest';
 import { PrismaService } from '@app/common/database/postgres';
 import { CryptoHelper } from '@app/common/utils';
 import { AuthSessionService } from './auth-session.service';
 
 describe('AuthSessionService', () => {
-  const create = jest.fn();
-  const findUnique = jest.fn();
-  const updateMany = jest.fn();
-  const signAsync = jest.fn();
+  const create = vi.fn();
+  const findUnique = vi.fn();
+  const updateMany = vi.fn();
+  const signAsync = vi.fn();
   const prisma = {
     authSession: { create, findUnique, updateMany },
   } as unknown as PrismaService;
@@ -23,7 +24,7 @@ describe('AuthSessionService', () => {
   };
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('stores only the refresh token hash when creating a session', async () => {
@@ -32,7 +33,7 @@ describe('AuthSessionService', () => {
 
     const result = await service.createSession(user, {
       ipAddress: '127.0.0.1',
-      userAgent: 'jest',
+      userAgent: 'vitest',
     });
 
     expect(result.accessToken).toBe('access-token');

@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@app/common/database/postgres';
-import { MessageKey } from '@app/common/constants';
+import { ErrorCode, MessageKey } from '@app/common/constants';
 import { RedisService } from '@app/common/redis/redis.service';
 import { MessageService } from '@app/common/services/messageService/message.service';
 import { CryptoHelper, GeneralHelper } from '@app/common/utils';
@@ -116,10 +116,10 @@ export class PasswordResetService {
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ reset: true }> {
     if (dto.password !== dto.confirmPassword) {
-      throw new BadRequestException({
-        code: 'PASSWORD_CONFIRMATION_MISMATCH',
-        message: MessageKey.VALIDATION_AUTH_PASSWORD_MISMATCH,
-      });
+      throw new BadRequestException(
+        { message: MessageKey.VALIDATION_AUTH_PASSWORD_MISMATCH },
+        { errorCode: ErrorCode.PASSWORD_CONFIRMATION_MISMATCH },
+      );
     }
 
     const phone = dto.phone.trim();
@@ -209,10 +209,10 @@ export class PasswordResetService {
   }
 
   private invalidOtp(): BadRequestException {
-    return new BadRequestException({
-      code: 'PASSWORD_RESET_OTP_INVALID',
-      message: MessageKey.AUTH_PASSWORD_RESET_OTP_INVALID,
-    });
+    return new BadRequestException(
+      { message: MessageKey.AUTH_PASSWORD_RESET_OTP_INVALID },
+      { errorCode: ErrorCode.PASSWORD_RESET_OTP_INVALID },
+    );
   }
 
   private hashOtp(phone: string, otpCode: string): string {

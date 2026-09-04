@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { vi } from 'vitest';
 import { PrismaService } from '@app/common/database/postgres';
 import { RedisService } from '@app/common/redis/redis.service';
 import { MessageService } from '@app/common/services/messageService/message.service';
@@ -7,19 +8,19 @@ import { SmsService } from '../sms/sms.service';
 import { PasswordResetService } from './password-reset.service';
 
 describe('PasswordResetService', () => {
-  const findUnique = jest.fn();
-  const findFirst = jest.fn();
-  const update = jest.fn();
-  const updateMany = jest.fn();
-  const transaction = jest.fn();
-  const exists = jest.fn();
-  const set = jest.fn();
-  const del = jest.fn();
-  const evalScript = jest.fn();
-  const send = jest.fn();
-  const getMessage = jest.fn();
+  const findUnique = vi.fn();
+  const findFirst = vi.fn();
+  const update = vi.fn();
+  const updateMany = vi.fn();
+  const transaction = vi.fn();
+  const exists = vi.fn();
+  const set = vi.fn();
+  const del = vi.fn();
+  const evalScript = vi.fn();
+  const send = vi.fn();
+  const getMessage = vi.fn();
   const redisClient = { exists, set, del, eval: evalScript };
-  const connectWithRetry = jest.fn().mockResolvedValue(redisClient);
+  const connectWithRetry = vi.fn().mockResolvedValue(redisClient);
   const prisma = {
     user: { findUnique, findFirst, update },
     authSession: { updateMany },
@@ -45,8 +46,8 @@ describe('PasswordResetService', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
-    jest.clearAllMocks();
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
     connectWithRetry.mockResolvedValue(redisClient);
   });
 
@@ -72,7 +73,7 @@ describe('PasswordResetService', () => {
     del.mockResolvedValue(1);
     send.mockResolvedValue({ status: 1 });
     getMessage.mockReturnValue('Reset code: 123456');
-    jest.spyOn(GeneralHelper, 'generateOtp').mockReturnValue('123456');
+    vi.spyOn(GeneralHelper, 'generateOtp').mockReturnValue('123456');
 
     await expect(
       service.requestReset({ phone: '09120000001' }),
@@ -104,7 +105,7 @@ describe('PasswordResetService', () => {
     updateMany.mockResolvedValue({ count: 2 });
     transaction.mockResolvedValue([]);
     del.mockResolvedValue(3);
-    jest.spyOn(CryptoHelper, 'hash').mockResolvedValue('new-password-hash');
+    vi.spyOn(CryptoHelper, 'hash').mockResolvedValue('new-password-hash');
 
     await expect(
       service.resetPassword({

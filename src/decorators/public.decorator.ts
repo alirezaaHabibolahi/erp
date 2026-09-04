@@ -1,5 +1,6 @@
-import { SetMetadata } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
-export const IS_PUBLIC_ROUTE_KEY = 'is_public_route';
-
-export const Public = () => SetMetadata(IS_PUBLIC_ROUTE_KEY, true);
+export const Public = Reflector.createDecorator<void, boolean>({
+  key: 'is_public_route',
+  transform: () => true,
+});

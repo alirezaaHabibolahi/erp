@@ -7,9 +7,9 @@ architecture.
 
 | Area             | Current choice                                     |
 | ---------------- | -------------------------------------------------- |
-| Runtime          | Node.js                                            |
-| Framework        | NestJS 11                                          |
-| Language         | TypeScript                                         |
+| Runtime          | Node.js 22.22.3 recommended                        |
+| Framework        | NestJS 12                                          |
+| Language         | TypeScript 6                                       |
 | Package manager  | Yarn 1.22.22                                       |
 | Database         | PostgreSQL with Prisma 7                           |
 | Prisma runtime   | `@prisma/adapter-pg`                               |
@@ -17,6 +17,9 @@ architecture.
 | Auth             | Username/password, JWT sessions, SMS reset OTP     |
 | API docs         | Swagger                                            |
 | Validation       | class-validator + `I18nValidationPipe`             |
+| Env validation   | Zod 4 through Nest Standard Schema                 |
+| Build            | TypeScript check + Rspack 2                        |
+| Tests            | Vitest 5                                           |
 | Common library   | `libs/common`                                      |
 | API envelope     | Global success interceptor + error filter          |
 | Language         | `?lang`, `X-Language`, `X-Lang`, `Accept-Language` |
@@ -31,8 +34,8 @@ prisma.config.ts
 prisma/schema/
 ```
 
-`src/main.ts` creates the Nest application, enables CORS, configures Swagger,
-and adds cookie parsing.
+`src/main.ts` creates the Nest application, enables route conflict diagnostics,
+graceful shutdown and CORS, configures Swagger, and adds cookie parsing.
 
 `src/app.module.ts` imports:
 
@@ -48,14 +51,16 @@ It also registers global cross-cutting providers through Nest DI:
 - `APP_GUARD` -> `RateLimitGuard`
 - `APP_GUARD` -> `JwtAuthGuard`
 
-`ConfigModule` loads `src/config/general.ts`, which currently exposes only
-current runtime configuration:
+`ConfigModule` validates process environment through
+`src/config/environment.schema.ts` before loading `src/config/general.ts`,
+which exposes only current runtime configuration:
 
 ```text
 app
 redis
 rateLimit
 jwt
+auth
 sms
 ```
 
@@ -301,6 +306,9 @@ Current decorators:
 - `@CurrentUser()`
 - `@ResponseMessage(...)`
 
+Metadata decorators use `Reflector.createDecorator()` so guards and
+interceptors read typed metadata instead of raw string keys.
+
 Current limitations:
 
 - String role guards and decorators were removed.
@@ -333,3 +341,20 @@ Current limitations:
 - Avoid storing large permission arrays inside JWT access tokens.
 - Stop using global coupling for every shared service.
 - Keep API response, error, and language handling centralized and DI-based.
+
+## Current Nest 12 Decisions
+
+- The application remains CommonJS. Nest 12 is ESM-only internally, but the
+  supported Node runtime can load it without converting application imports.
+- `nest-cli.json` uses Rspack. `yarn build` runs `tsc --noEmit` first because
+  the Rspack SWC loader is a transpiler, not a complete type checker.
+- Route duplicates fail at bootstrap and route shadowing emits warnings.
+- `HttpExceptionOptions.errorCode` is the canonical source for stable API
+  error codes; `AllExceptionsFilter` maps it to the existing `code` field.
+- Class-validator DTOs remain the API validation strategy. Standard Schema is
+  currently used only for environment configuration.
+- Jest was replaced with Vitest because Nest 12 framework packages are ESM-only.
+- Native Nest observability remains opt-in until its operational backend,
+  retention and cost are selected.
+
+See [NestJS 12 Platform Baseline](./03-nestjs-12-platform.md).

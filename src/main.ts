@@ -1,18 +1,27 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import * as cookieParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 
 import { Logger } from '@nestjs/common';
 import { setupSwagger } from './swagger';
 import { generalConfig } from './config/general';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    routeConflictPolicy: {
+      duplicate: 'error',
+      shadow: 'warn',
+    },
+    routeResolutionStrategy: 'specificity',
+  });
   const config = generalConfig();
+
+  app.enableShutdownHooks();
 
   // Only honor X-Forwarded-For when the deployment explicitly sits behind a
   // trusted reverse proxy. This keeps client IP based limits non-spoofable.
-  app.getHttpAdapter().getInstance().set('trust proxy', config.app.trustProxy);
+  app.set('trust proxy', config.app.trustProxy);
 
   app.enableCors({
     origin: config.app.corsOrigins.length
@@ -43,4 +52,10 @@ async function bootstrap() {
   Logger.log(`server is running on port : ${PORT}`);
 }
 
-bootstrap();
+void bootstrap().catch((error: unknown) => {
+  Logger.error(
+    'Application bootstrap failed',
+    error instanceof Error ? error.stack : undefined,
+  );
+  process.exitCode = 1;
+});

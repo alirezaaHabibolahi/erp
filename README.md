@@ -11,7 +11,10 @@ authorization architecture is a dynamic IAM/RBAC/ABAC permission system.
 
 ## Current Status
 
-- Framework: NestJS 11 + TypeScript
+- Framework: NestJS 12 + TypeScript 6
+- Recommended Node.js: 22.22.3 (see `.nvmrc` and `.node-version`)
+- Build: explicit TypeScript check followed by Rspack
+- Tests: Vitest 5
 - Package manager: Yarn 1.22.22
 - Database layer: PostgreSQL + Prisma
 - Prisma version: 7.10.0 with `prisma.config.ts` and PostgreSQL driver adapter
@@ -35,6 +38,9 @@ Important current notes:
 - `JwtAuthGuard` is global; routes are private unless marked with `@Public()`.
 - Global response, error, validation, and language handling are registered in
   `AppModule` through Nest DI providers.
+- Nest 12 route conflict diagnostics, native exception error codes, graceful
+  shutdown, typed reflection decorators, and Standard Schema env validation
+  are enabled.
 
 ## Documentation Map
 
@@ -43,6 +49,7 @@ Read these files before changing architecture or adding ERP modules:
 - [Documentation Home](./docs/README.md)
 - [Current Backend Architecture](./docs/architecture/01-current-backend.md)
 - [Target Backend Architecture](./docs/architecture/02-target-backend-architecture.md)
+- [NestJS 12 Platform Baseline](./docs/architecture/03-nestjs-12-platform.md)
 - [Target PostgreSQL and Prisma Schema](./docs/database/02-target-postgresql-prisma-schema.md)
 - [IAM, RBAC, ABAC, Permissions](./docs/iam/01-iam-rbac-abac.md)
 - [Authentication and Sessions](./docs/iam/02-authentication-and-sessions.md)
@@ -58,6 +65,11 @@ Install dependencies:
 ```bash
 yarn install
 ```
+
+Use Node.js 22.22.3 or newer on the supported 22.x line before running Nest
+CLI commands. The runtime can load Nest 12 on Node 22.12+, but `nest generate`
+and `nest upgrade` require the newer CLI toolchain. The repository pins the
+recommended version in `.nvmrc` and `.node-version`.
 
 Start local infrastructure:
 
@@ -89,12 +101,6 @@ Run in development mode:
 yarn start:dev
 ```
 
-If Windows/Yarn cannot resolve the local Nest binary, use:
-
-```bash
-yarn run nest start --watch
-```
-
 Build:
 
 ```bash
@@ -105,6 +111,12 @@ Run tests:
 
 ```bash
 yarn test
+```
+
+Type-check without bundling:
+
+```bash
+yarn typecheck
 ```
 
 ## Required Environment Variables

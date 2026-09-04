@@ -27,6 +27,33 @@ making code changes.
 - Keep each phase small enough to build and verify.
 - Update docs when code changes.
 - Keep unrelated refactors out of implementation phases.
+- Use Node.js 22.22.3 or newer on the supported 22.x line for Nest CLI work.
+- Keep NestJS 12 packages on the same major and preserve the current CommonJS
+  application format until an explicit ESM migration phase is approved.
+
+## Platform Baseline - NestJS 12
+
+Status:
+
+```text
+Completed. Nest packages are aligned on v12, TypeScript is v6, builds use a
+TypeScript check plus Rspack, tests use Vitest, and environment config uses
+Zod through Nest Standard Schema.
+```
+
+Implemented decisions:
+
+- CommonJS application format retained.
+- Node.js 22.22.3 pinned for full runtime and CLI support.
+- Route duplicate/shadow diagnostics enabled.
+- Graceful shutdown hooks enabled.
+- Route metadata decorators migrated to `Reflector.createDecorator()`.
+- Native Nest `errorCode` mapped into the centralized API error envelope.
+- Unused Nest GraphQL, microservices, scheduler, Pino, Joi and AMQP packages
+  removed.
+- Nest native observability deferred until an operational backend is selected.
+
+See [NestJS 12 Platform Baseline](../architecture/03-nestjs-12-platform.md).
 
 ## Phase 0 - Documentation and Current-State Freeze
 
@@ -58,7 +85,8 @@ Status:
 
 ```text
 In progress. Prisma 7 packages, prisma.config.ts, schema, seed,
-docker-compose, env example, Nest Prisma module/service, and centralized
+docker-compose, env example, Nest Prisma module/service, NestJS 12 platform
+baseline, and centralized
 response/error/language handling have been added. The IAM schema now uses
 identity-only users, numeric permission codes, role assignments, and role
 scopes. Username/password auth, JWT sessions, refresh rotation, logout, and SMS

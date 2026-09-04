@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '@app/common/database/postgres';
 import { TokenPayload } from '@app/common/dto';
-import { MessageKey } from '@app/common/constants';
+import { ErrorCode, MessageKey } from '@app/common/constants';
 import { generalConfig } from '../../config/general';
 
 @Injectable()
@@ -57,9 +57,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   private invalidToken(): UnauthorizedException {
-    return new UnauthorizedException({
-      code: 'AUTH_INVALID_TOKEN',
-      message: MessageKey.AUTH_INVALID_TOKEN,
-    });
+    return new UnauthorizedException(
+      { message: MessageKey.AUTH_INVALID_TOKEN },
+      { errorCode: ErrorCode.AUTH_INVALID_TOKEN },
+    );
   }
 }

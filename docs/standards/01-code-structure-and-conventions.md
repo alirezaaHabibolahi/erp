@@ -11,6 +11,7 @@ This document defines backend coding rules for the ERP.
 - Keep permissions centralized.
 - Keep audit logs for important mutations.
 - Keep documentation updated with code.
+- Keep Nest, TypeScript, test and build packages on compatible major versions.
 
 ## Target Module Structure
 
@@ -95,6 +96,18 @@ DTOs should:
 - Use `class-transformer` only when needed.
 - Separate create, update, query, and response DTOs.
 - Never expose password hashes, token hashes, or internal metadata.
+
+Class-validator remains the default for class DTOs. Standard Schema may be
+used where a schema-first contract is more appropriate; environment config
+currently uses Zod through Nest's `validationSchema` option.
+
+## Nest Metadata Rules
+
+- Create route metadata decorators with `Reflector.createDecorator()`.
+- Read metadata by passing the decorator reference to `Reflector`.
+- Do not introduce new raw `SetMetadata` string keys.
+- Use `import type` when a type-only symbol appears in a decorated class. This
+  avoids Rspack/SWC trying to emit runtime decorator metadata for an interface.
 
 ## Naming Rules
 
@@ -181,6 +194,10 @@ CONFLICT
 INTERNAL_ERROR
 ```
 
+Use `HttpExceptionOptions.errorCode` for stable machine-readable codes. Keep
+codes in `ErrorCode`, use `MessageKey` for translatable human text, and let
+`AllExceptionsFilter` create the HTTP response envelope.
+
 ## Testing Rules
 
 Minimum tests for important modules:
@@ -193,6 +210,10 @@ Minimum tests for important modules:
 Authentication tests must verify generic credential errors, refresh-token
 rotation, revoked sessions, OTP attempt limits, and session revocation after a
 password reset.
+
+The test runner is Vitest. Use `vi.fn()`, `vi.spyOn()` and the shared aliases in
+`vitest.config.mts`. `yarn build` must always include a TypeScript check before
+the Rspack bundle.
 
 ## Documentation Rules
 

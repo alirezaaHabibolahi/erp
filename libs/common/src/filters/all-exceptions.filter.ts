@@ -8,7 +8,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { MessageKey } from '@app/common/constants';
+import { ErrorCode, MessageKey } from '@app/common/constants';
 import { RequestContext } from '@app/common/context/request-context';
 import { LanguageCode } from '@app/common/constants/messages/select-language';
 import { MessageService } from '@app/common/services';
@@ -38,7 +38,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const hasOwn = (value: Record<string, unknown>, key: string): boolean =>
-  Object.prototype.hasOwnProperty.call(value, key);
+  Object.hasOwn(value, key);
 
 @Catch()
 @Injectable()
@@ -138,6 +138,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }): string {
     const { body, databaseError, exception, status } = options;
 
+    if (exception instanceof HttpException && exception.errorCode) {
+      return exception.errorCode;
+    }
+
     if (body?.code) {
       return body.code;
     }
@@ -212,13 +216,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       case 'P2002':
         return {
           status: HttpStatus.CONFLICT,
-          code: 'DATABASE_DUPLICATE_KEY',
+          code: ErrorCode.DATABASE_DUPLICATE_KEY,
           messageKey: MessageKey.DATABASE_DUPLICATE_KEY,
         };
       case 'P2025':
         return {
           status: HttpStatus.NOT_FOUND,
-          code: 'DATABASE_RECORD_NOT_FOUND',
+          code: ErrorCode.DATABASE_RECORD_NOT_FOUND,
           messageKey: MessageKey.GENERAL_NOT_FOUND,
         };
       default:

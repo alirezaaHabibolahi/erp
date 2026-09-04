@@ -1,6 +1,4 @@
-import { SetMetadata } from '@nestjs/common';
-
-export const REQUIRED_ACCESS_KEY = 'required_access';
+import { Reflector } from '@nestjs/core';
 
 export interface RequiredAccess {
   systemCode: number;
@@ -8,5 +6,10 @@ export interface RequiredAccess {
   actionCode: number;
 }
 
-export const RequireAccess = (access: RequiredAccess | RequiredAccess[]) =>
-  SetMetadata(REQUIRED_ACCESS_KEY, Array.isArray(access) ? access : [access]);
+export const RequireAccess = Reflector.createDecorator<
+  RequiredAccess | RequiredAccess[],
+  RequiredAccess[]
+>({
+  key: 'required_access',
+  transform: (access) => (Array.isArray(access) ? access : [access]),
+});

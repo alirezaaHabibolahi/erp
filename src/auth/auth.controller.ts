@@ -8,7 +8,7 @@ import {
 import type { Request } from 'express';
 import { MessageKey } from '@app/common/constants';
 import { CurrentUser } from '@app/common/decorators';
-import { TokenPayload } from '@app/common/dto';
+import type { TokenPayload } from '@app/common/dto';
 import { Public } from '../decorators/public.decorator';
 import { RateLimit } from '../decorators/rate-limit.decorator';
 import { AuthService } from './auth.service';

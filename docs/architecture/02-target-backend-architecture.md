@@ -4,6 +4,7 @@ This document describes the intended ERP backend architecture.
 
 ## Architecture Goals
 
+- NestJS 12 on a Node.js runtime that also supports the Nest CLI toolchain.
 - Modular ERP backend.
 - PostgreSQL as the main transactional database.
 - Prisma for schema, migrations, and type-safe database access.
@@ -29,7 +30,7 @@ src/
       audit.prisma
 
   config/
-    env.schema.ts
+    environment.schema.ts
     general.ts
 
   common/
@@ -277,9 +278,10 @@ Target API errors should be consistent:
 ```
 
 Controllers and services should throw errors with stable `code` values and
-translation keys from `MessageKey`. The global exception filter owns HTTP
-response shape and language translation. Unknown internal errors must not expose
-raw messages in production.
+translation keys from `MessageKey`. On Nest 12, exceptions should set the code
+through `HttpExceptionOptions.errorCode`; the global exception filter maps it
+to the API envelope's `code` field and owns language translation. Unknown
+internal errors must not expose raw messages in production.
 
 ## Success Response
 

@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import { ApiRestService } from '@app/common/services';
+import { getErrorMessage } from '@app/common/utils';
 
 @Injectable()
 export class DownloadService {
@@ -47,7 +48,6 @@ export class DownloadService {
     });
   }
 
-
   /**
    * Downloads a file using streaming with timeout cancellation
    * @param downloadUrl - The URL to download from
@@ -67,14 +67,16 @@ export class DownloadService {
     this.logger.log(`Destination: ${filePath}`);
     this.logger.log(`Timeout: ${timeoutMs / 1000}s`);
 
-    let lastError: any;
+    let lastError: unknown;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       // Create an AbortController for timeout cancellation
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         controller.abort();
-        this.logger.warn(`Download timeout after ${timeoutMs / 1000}s - aborting...`);
+        this.logger.warn(
+          `Download timeout after ${timeoutMs / 1000}s - aborting...`,
+        );
       }, timeoutMs);
 
       try {
@@ -87,22 +89,26 @@ export class DownloadService {
 
         const response = await this.axiosInstance.get(downloadUrl, {
           headers: {
-            'Accept': 'application/zip, application/octet-stream, */*',
+            Accept: 'application/zip, application/octet-stream, */*',
             'Accept-Encoding': 'gzip, deflate, br',
             'User-Agent': this.userAgent,
             'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
+            Pragma: 'no-cache',
           },
           signal: controller.signal, // Pass abort signal
           timeout: timeoutMs, // Axios timeout
           onDownloadProgress: (progressEvent) => {
             // Log progress every 10MB
             if (progressEvent.loaded % (10 * 1024 * 1024) === 0) {
-              const loadedMB = (progressEvent.loaded / (1024 * 1024)).toFixed(2);
+              const loadedMB = (progressEvent.loaded / (1024 * 1024)).toFixed(
+                2,
+              );
               const totalMB = progressEvent.total
                 ? (progressEvent.total / (1024 * 1024)).toFixed(2)
                 : 'unknown';
-              this.logger.log(`Download progress: ${loadedMB}MB / ${totalMB}MB`);
+              this.logger.log(
+                `Download progress: ${loadedMB}MB / ${totalMB}MB`,
+              );
             }
           },
         });
@@ -145,25 +151,33 @@ export class DownloadService {
         }
 
         this.logger.log(`Download completed: ${filePath}`);
-        this.logger.log(`File size: ${(stats.size / (1024 * 1024)).toFixed(2)} MB`);
+        this.logger.log(
+          `File size: ${(stats.size / (1024 * 1024)).toFixed(2)} MB`,
+        );
 
         return filePath;
-
       } catch (error) {
         // Clear timeout
         clearTimeout(timeoutId);
 
         lastError = error;
+        const message = getErrorMessage(error);
 
         // Check if request was aborted due to timeout
-        if (axios.isCancel(error) || error.code === 'ERR_CANCELED' || error.code === 'ECONNABORTED') {
-          this.logger.error(`Download aborted/timeout after ${timeoutMs / 1000}s`);
-        } else if (error.response) {
+        if (
+          axios.isCancel(error) ||
+          (axios.isAxiosError(error) &&
+            (error.code === 'ERR_CANCELED' || error.code === 'ECONNABORTED'))
+        ) {
           this.logger.error(
-            `Download failed with status ${error.response.status}: ${error.message}`
+            `Download aborted/timeout after ${timeoutMs / 1000}s`,
+          );
+        } else if (axios.isAxiosError(error) && error.response) {
+          this.logger.error(
+            `Download failed with status ${error.response.status}: ${message}`,
           );
         } else {
-          this.logger.error(`Download error: ${error.message}`);
+          this.logger.error(`Download error: ${message}`);
         }
 
         // Clean up partial download
@@ -171,20 +185,22 @@ export class DownloadService {
           try {
             await fs.promises.unlink(filePath);
           } catch (cleanupError) {
-            this.logger.error(`Failed to cleanup: ${cleanupError.message}`);
+            this.logger.error(
+              `Failed to cleanup: ${getErrorMessage(cleanupError)}`,
+            );
           }
         }
 
         if (attempt < retries) {
           const delay = attempt * 2000;
           this.logger.log(`Retrying in ${delay / 1000}s...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
 
     throw new Error(
-      `Failed to download file after ${retries} attempts. Last error: ${lastError?.message}`
+      `Failed to download file after ${retries} attempts. Last error: ${getErrorMessage(lastError)}`,
     );
   }
 
@@ -206,14 +222,16 @@ export class DownloadService {
     try {
       const response = await this.axiosInstance.get(downloadUrl, {
         headers: {
-          'Accept': 'application/zip, application/octet-stream, */*',
+          Accept: 'application/zip, application/octet-stream, */*',
           'User-Agent': this.userAgent,
         },
         signal: controller.signal,
         timeout: timeoutMs,
         onDownloadProgress: (progressEvent) => {
           if (onProgress && progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            const percent = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total,
+            );
             const loadedMB = +(progressEvent.loaded / (1024 * 1024)).toFixed(2);
             const totalMB = +(progressEvent.total / (1024 * 1024)).toFixed(2);
             onProgress(percent, loadedMB, totalMB);
@@ -227,17 +245,17 @@ export class DownloadService {
 
       this.logger.log(`Download completed: ${filePath}`);
       return filePath;
-
     } catch (error) {
       clearTimeout(timeoutId);
+      const message = getErrorMessage(error);
 
-      this.logger.error(`Download failed: ${error.message}`);
+      this.logger.error(`Download failed: ${message}`);
 
       if (fs.existsSync(filePath)) {
         await fs.promises.unlink(filePath);
       }
 
-      throw new Error(`Failed to download file: ${error.message}`);
+      throw new Error(`Failed to download file: ${message}`);
     }
   }
 
@@ -251,7 +269,9 @@ export class DownloadService {
         this.logger.log(`Cleaned up file: ${filePath}`);
       }
     } catch (error) {
-      this.logger.error(`Failed to cleanup file ${filePath}: ${error.message}`);
+      this.logger.error(
+        `Failed to cleanup file ${filePath}: ${getErrorMessage(error)}`,
+      );
     }
   }
 
@@ -263,7 +283,9 @@ export class DownloadService {
       if (fs.existsSync(directoryPath)) {
         const files = await fs.promises.readdir(directoryPath);
 
-        this.logger.log(`Cleaning download directory: ${files.length} files found`);
+        this.logger.log(
+          `Cleaning download directory: ${files.length} files found`,
+        );
 
         for (const file of files) {
           const filePath = path.join(directoryPath, file);
@@ -278,14 +300,18 @@ export class DownloadService {
 
             this.logger.log(`Removed: ${file}`);
           } catch (error) {
-            this.logger.error(`Failed to remove ${file}: ${error.message}`);
+            this.logger.error(
+              `Failed to remove ${file}: ${getErrorMessage(error)}`,
+            );
           }
         }
 
         this.logger.log('Download directory cleaned successfully');
       }
     } catch (error) {
-      this.logger.error(`Failed to clean download directory: ${error.message}`);
+      this.logger.error(
+        `Failed to clean download directory: ${getErrorMessage(error)}`,
+      );
     }
   }
 
@@ -316,15 +342,19 @@ export class DownloadService {
             cleanedCount++;
           }
         } catch (error) {
-          this.logger.error(`Failed to process ${file}: ${error.message}`);
+          this.logger.error(
+            `Failed to process ${file}: ${getErrorMessage(error)}`,
+          );
         }
       }
 
       if (cleanedCount > 0) {
-        this.logger.log(`Cleaned ${cleanedCount} old files from download directory`);
+        this.logger.log(
+          `Cleaned ${cleanedCount} old files from download directory`,
+        );
       }
     } catch (error) {
-      this.logger.error(`Failed to clean old files: ${error.message}`);
+      this.logger.error(`Failed to clean old files: ${getErrorMessage(error)}`);
     }
   }
 
@@ -360,7 +390,6 @@ export class DownloadService {
   getDownloadDir(): string {
     return this.downloadDir;
   }
-
 
   /**
    * Generate User-Agent based on operating system

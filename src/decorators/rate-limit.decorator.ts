@@ -1,6 +1,4 @@
-import { SetMetadata } from '@nestjs/common';
-
-export const RATE_LIMIT_METADATA = 'rate-limit';
+import { Reflector } from '@nestjs/core';
 
 export interface RateLimitOptions {
   /** A stable name for the Redis counter. */
@@ -16,5 +14,6 @@ export interface RateLimitOptions {
  * Limits are keyed by client IP and handler, so one endpoint cannot consume
  * another endpoint's allowance.
  */
-export const RateLimit = (options: RateLimitOptions) =>
-  SetMetadata(RATE_LIMIT_METADATA, options);
+export const RateLimit = Reflector.createDecorator<RateLimitOptions>({
+  key: 'rate-limit',
+});

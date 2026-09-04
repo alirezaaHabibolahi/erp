@@ -1,13 +1,14 @@
 import { UnauthorizedException } from '@nestjs/common';
+import { vi } from 'vitest';
 import { PrismaService } from '@app/common/database/postgres';
 import { CryptoHelper } from '@app/common/utils';
 import { AuthSessionService } from './auth-session.service';
 import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
-  const findUnique = jest.fn();
-  const update = jest.fn();
-  const createSession = jest.fn();
+  const findUnique = vi.fn();
+  const update = vi.fn();
+  const createSession = vi.fn();
   const prisma = {
     user: { findUnique, update },
   } as unknown as PrismaService;
@@ -17,8 +18,8 @@ describe('AuthService', () => {
   const service = new AuthService(prisma, sessions);
 
   afterEach(() => {
-    jest.restoreAllMocks();
-    jest.clearAllMocks();
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it('normalizes username and creates a persisted session', async () => {
@@ -37,7 +38,7 @@ describe('AuthService', () => {
       refreshToken: 'refresh-token',
       sessionId: 'session-1',
     });
-    jest.spyOn(CryptoHelper, 'compare').mockResolvedValue(true);
+    vi.spyOn(CryptoHelper, 'compare').mockResolvedValue(true);
 
     await expect(
       service.login(
@@ -75,7 +76,7 @@ describe('AuthService', () => {
 
     await expect(promise).rejects.toBeInstanceOf(UnauthorizedException);
     await expect(promise).rejects.toMatchObject({
-      response: { code: 'AUTH_INVALID_CREDENTIALS' },
+      errorCode: 'AUTH_INVALID_CREDENTIALS',
     });
     expect(createSession).not.toHaveBeenCalled();
   });
@@ -89,7 +90,7 @@ describe('AuthService', () => {
       isActive: true,
       deletedAt: null,
     });
-    jest.spyOn(CryptoHelper, 'compare').mockResolvedValue(false);
+    vi.spyOn(CryptoHelper, 'compare').mockResolvedValue(false);
 
     await expect(
       service.login({ username: 'test_admin', password: 'wrong-password' }, {}),

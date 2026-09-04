@@ -10,7 +10,7 @@ import type { Request, Response } from 'express';
 import { Observable, map } from 'rxjs';
 import { MessageKey } from '@app/common/constants';
 import { RequestContext } from '@app/common/context/request-context';
-import { RESPONSE_MESSAGE_KEY } from '@app/common/decorators';
+import { ResponseMessage } from '@app/common/decorators';
 import { LanguageCode } from '@app/common/constants/messages/select-language';
 import { MessageService } from '@app/common/services/messageService/message.service';
 
@@ -30,7 +30,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const hasOwn = (value: Record<string, unknown>, key: string): boolean =>
-  Object.prototype.hasOwnProperty.call(value, key);
+  Object.hasOwn(value, key);
 
 @Injectable()
 export class ResponseInterceptor implements NestInterceptor {
@@ -39,15 +39,18 @@ export class ResponseInterceptor implements NestInterceptor {
     private readonly messageService: MessageService,
   ) {}
 
-  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+  intercept(
+    context: ExecutionContext,
+    next: CallHandler<unknown>,
+  ): Observable<unknown> {
     if (context.getType() !== 'http') {
       return next.handle();
     }
 
-    const messageKey = this.reflector.getAllAndOverride<string>(
-      RESPONSE_MESSAGE_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const messageKey = this.reflector.getAllAndOverride(ResponseMessage, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     const request = context.switchToHttp().getRequest<RequestWithContext>();
     const response = context.switchToHttp().getResponse<Response>();
     const lang = request.lang || RequestContext.getLang();

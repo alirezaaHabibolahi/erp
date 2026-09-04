@@ -3,7 +3,7 @@ import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { PrismaService } from '@app/common/database/postgres';
 import { TokenPayload, TokenResponse } from '@app/common/dto';
 import { CryptoHelper } from '@app/common/utils';
-import { MessageKey } from '@app/common/constants';
+import { ErrorCode, MessageKey } from '@app/common/constants';
 import { generalConfig } from '../config/general';
 import { AuthRequestContext } from './interfaces';
 
@@ -173,10 +173,10 @@ export class AuthSessionService {
   }
 
   private invalidRefreshToken(): UnauthorizedException {
-    return new UnauthorizedException({
-      code: 'REFRESH_TOKEN_INVALID',
-      message: MessageKey.AUTH_REFRESH_TOKEN_INVALID,
-    });
+    return new UnauthorizedException(
+      { message: MessageKey.AUTH_REFRESH_TOKEN_INVALID },
+      { errorCode: ErrorCode.REFRESH_TOKEN_INVALID },
+    );
   }
 }
 

@@ -1,17 +1,14 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Readable } from 'stream';
-import * as JSZip from 'jszip';
+import JSZip from 'jszip';
 
 import { ZipEntry } from '@app/common/services';
 import { ZipOpenOptions } from '@app/common/services';
 import { ExtractOptions } from '@app/common/services';
+import { getErrorMessage } from '@app/common/utils';
 
 @Injectable()
 export class ZipReaderService {
@@ -29,12 +26,11 @@ export class ZipReaderService {
         throw new BadRequestException('Buffer is empty or invalid');
       }
 
-      this.logger.log(`Loading ZIP from buffer of size: ${(buffer.length / 1024).toFixed(2)} KB`);
+      this.logger.log(
+        `Loading ZIP from buffer of size: ${(buffer.length / 1024).toFixed(2)} KB`,
+      );
 
-      // Make sure we're using the default import
-      const JSZipClass = (JSZip as any).default || JSZip;
-
-      const zip = await JSZipClass.loadAsync(buffer);
+      const zip = await JSZip.loadAsync(buffer);
 
       if (!zip) {
         throw new BadRequestException('Failed to load ZIP file');
@@ -42,8 +38,9 @@ export class ZipReaderService {
 
       return zip;
     } catch (error) {
-      this.logger.error(`Error opening ZIP: ${error.message}`);
-      throw new BadRequestException(`Failed to open ZIP file: ${error.message}`);
+      const message = getErrorMessage(error);
+      this.logger.error(`Error opening ZIP: ${message}`);
+      throw new BadRequestException(`Failed to open ZIP file: ${message}`);
     }
   }
 
@@ -80,8 +77,9 @@ export class ZipReaderService {
 
       return result;
     } catch (error) {
-      this.logger.error(`Error getting entries: ${error.message}`);
-      throw new BadRequestException(`Failed to get ZIP entries: ${error.message}`);
+      const message = getErrorMessage(error);
+      this.logger.error(`Error getting entries: ${message}`);
+      throw new BadRequestException(`Failed to get ZIP entries: ${message}`);
     }
   }
 
@@ -100,8 +98,9 @@ export class ZipReaderService {
 
       return file.async('nodebuffer');
     } catch (error) {
-      this.logger.error(`Error reading buffer: ${error.message}`);
-      throw new BadRequestException(`Failed to read file from ZIP: ${error.message}`);
+      const message = getErrorMessage(error);
+      this.logger.error(`Error reading buffer: ${message}`);
+      throw new BadRequestException(`Failed to read file from ZIP: ${message}`);
     }
   }
 
@@ -171,8 +170,9 @@ export class ZipReaderService {
         });
       }
     } catch (error) {
-      this.logger.error(`Error extracting ZIP: ${error.message}`);
-      throw new BadRequestException(`Failed to extract ZIP: ${error.message}`);
+      const message = getErrorMessage(error);
+      this.logger.error(`Error extracting ZIP: ${message}`);
+      throw new BadRequestException(`Failed to extract ZIP: ${message}`);
     }
   }
 
@@ -212,7 +212,9 @@ export class ZipReaderService {
         try {
           await fs.access(options.path);
         } catch {
-          throw new BadRequestException(`File not found at path: ${options.path}`);
+          throw new BadRequestException(
+            `File not found at path: ${options.path}`,
+          );
         }
 
         const stats = await fs.stat(options.path);
@@ -225,12 +227,14 @@ export class ZipReaderService {
         this.logger.log('Loading ZIP from stream');
         const chunks: Buffer[] = [];
 
-        for await (const chunk of options.stream as Readable) {
+        for await (const chunk of options.stream) {
           chunks.push(Buffer.from(chunk));
         }
 
         const buffer = Buffer.concat(chunks);
-        this.logger.log(`Stream loaded: ${(buffer.length / 1024).toFixed(2)} KB`);
+        this.logger.log(
+          `Stream loaded: ${(buffer.length / 1024).toFixed(2)} KB`,
+        );
         return buffer;
       }
 
@@ -239,8 +243,9 @@ export class ZipReaderService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      this.logger.error(`Error loading buffer: ${error.message}`);
-      throw new BadRequestException(`Failed to load file: ${error.message}`);
+      const message = getErrorMessage(error);
+      this.logger.error(`Error loading buffer: ${message}`);
+      throw new BadRequestException(`Failed to load file: ${message}`);
     }
   }
 }

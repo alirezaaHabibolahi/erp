@@ -9,12 +9,9 @@ import { Reflector } from '@nestjs/core';
 import { RedisService } from '@app/common/redis/redis.service';
 import { createHash } from 'node:crypto';
 import type { Request, Response } from 'express';
-import { MessageKey } from '@app/common/constants';
+import { ErrorCode, MessageKey } from '@app/common/constants';
 
-import {
-  RATE_LIMIT_METADATA,
-  RateLimitOptions,
-} from '../decorators/rate-limit.decorator';
+import { RateLimit } from '../decorators/rate-limit.decorator';
 import { generalConfig } from '../config/general';
 
 const COUNTER_SCRIPT = `
@@ -45,10 +42,10 @@ export class RateLimitGuard implements CanActivate {
       return true;
     }
 
-    const configured = this.reflector.getAllAndOverride<RateLimitOptions>(
-      RATE_LIMIT_METADATA,
-      [context.getHandler(), context.getClass()],
-    );
+    const configured = this.reflector.getAllAndOverride(RateLimit, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     const config = configured ?? generalConfig().rateLimit.default;
     const handlerName = `${context.getClass().name}:${context.getHandler().name}`;
     const clientIp = request.ip || request.socket.remoteAddress || 'unknown';
@@ -80,11 +77,11 @@ export class RateLimitGuard implements CanActivate {
       response.setHeader('Retry-After', retryAfter);
       throw new HttpException(
         {
-          code: 'RATE_LIMIT_EXCEEDED',
           data: { retryAfter },
           message: MessageKey.GENERAL_TOO_MANY_REQUESTS,
         },
         HttpStatus.TOO_MANY_REQUESTS,
+        { errorCode: ErrorCode.RATE_LIMIT_EXCEEDED },
       );
     }
 

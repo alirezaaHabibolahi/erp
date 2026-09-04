@@ -1,5 +1,5 @@
-import * as moment from 'jalali-moment';
-import * as PersianDate from 'persian-date';
+import moment from 'jalali-moment';
+import PersianDate from 'persian-date';
 
 const EXCEL_EPOCH_OFFSET_DAYS = 25569;
 const MS_PER_DAY = 86400000;

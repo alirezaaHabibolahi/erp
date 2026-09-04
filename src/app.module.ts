@@ -13,6 +13,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { generalConfig } from './config/general';
+import { environmentSchema } from './config/environment.schema';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RateLimitGuard } from './guards/rate-limit.guard';
 
@@ -22,6 +23,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
       isGlobal: true,
       envFilePath: '.env',
       load: [generalConfig],
+      validationSchema: environmentSchema,
     }),
     CommonModule,
     AuthModule,

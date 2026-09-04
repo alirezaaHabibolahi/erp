@@ -1,5 +1,4 @@
-import { Request } from 'express';
-import { FileFilterCallback } from 'multer';
+import type { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
 import { extname } from 'path';
 
 export interface FileFilterOptions {
@@ -15,19 +14,11 @@ export interface FileFilterOptions {
   extensions?: string[];
 }
 
-type FileFilter = (
-  req: Request,
-  file: Express.Multer.File,
-  callback: FileFilterCallback,
-) => void;
+type FileFilter = NonNullable<MulterOptions['fileFilter']>;
 
 export class FileFilterFactory {
   static create(options: FileFilterOptions): FileFilter {
-    return (
-      req: Request,
-      file: Express.Multer.File,
-      callback: FileFilterCallback,
-    ): void => {
+    return (_request, file, callback): void => {
       const extension = extname(file.originalname).toLowerCase();
 
       if (
@@ -37,6 +28,7 @@ export class FileFilterFactory {
       ) {
         callback(
           new Error(`File extension "${extension}" is not allowed.`),
+          false,
         );
         return;
       }
@@ -48,6 +40,7 @@ export class FileFilterFactory {
       ) {
         callback(
           new Error(`Mime type "${file.mimetype}" is not allowed.`),
+          false,
         );
         return;
       }

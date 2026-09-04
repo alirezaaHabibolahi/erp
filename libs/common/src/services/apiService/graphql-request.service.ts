@@ -1,5 +1,8 @@
-import { GraphQLClient, ClientError } from 'graphql-request';
-import { RequestConfig } from 'graphql-request/build/esm/types';
+import { GraphQLClient } from 'graphql-request';
+
+type GraphQLClientOptions = NonNullable<
+  ConstructorParameters<typeof GraphQLClient>[1]
+>;
 
 export class GraphQLRequest {
   private headers: {
@@ -11,7 +14,7 @@ export class GraphQLRequest {
     Accept: 'application/json',
   };
   private endPoint!: string;
-  private graphqlDefaultOptions: RequestConfig = {
+  private graphqlDefaultOptions: GraphQLClientOptions = {
     credentials: 'include',
   };
 
@@ -29,7 +32,7 @@ export class GraphQLRequest {
     return this;
   }
 
-  public setGraphqlOptions(options: RequestConfig): GraphQLRequest {
+  public setGraphqlOptions(options: GraphQLClientOptions): GraphQLRequest {
     this.graphqlDefaultOptions = options;
     return this;
   }
@@ -56,10 +59,8 @@ export class GraphQLRequest {
           ...this.graphqlDefaultOptions,
         });
 
-        const result: gqlResponseType = await gqRequest.request<gqlResponseType>(
-          query,
-          data as any,
-        );
+        const result: gqlResponseType =
+          await gqRequest.request<gqlResponseType>(query, data as any);
 
         console.log(`GraphQL Response received successfully`);
 
@@ -85,7 +86,7 @@ export class GraphQLRequest {
         if (attempt < maxRetries && this.isConnectionError(e)) {
           const delay = attempt * 2000; // 2, 4, 6 seconds
           console.log(`Waiting ${delay}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
         }
 
@@ -100,7 +101,11 @@ export class GraphQLRequest {
     if (lastError?.response) {
       const errorResponse = lastError.response;
 
-      if (errorResponse?.errors && Array.isArray(errorResponse.errors) && errorResponse.errors.length > 0) {
+      if (
+        errorResponse?.errors &&
+        Array.isArray(errorResponse.errors) &&
+        errorResponse.errors.length > 0
+      ) {
         const error = errorResponse.errors[0];
         throw {
           msg: error?.message || 'GraphQL error',
@@ -111,7 +116,7 @@ export class GraphQLRequest {
       }
 
       if (errorResponse?.data && typeof errorResponse.data === 'object') {
-        const dataObj = errorResponse.data as any;
+        const dataObj = errorResponse.data;
         throw {
           msg: dataObj?.message || 'GraphQL request failed',
           code: 'GRAPHQL_ERROR',
@@ -126,7 +131,10 @@ export class GraphQLRequest {
 
     // Check for connection-specific errors
     const errorMessage = lastError?.message || 'Unknown error';
-    if (errorMessage.includes('ECONNREFUSED') || errorMessage.includes('ENOTFOUND')) {
+    if (
+      errorMessage.includes('ECONNREFUSED') ||
+      errorMessage.includes('ENOTFOUND')
+    ) {
       throw {
         msg: `Cannot connect to ${this.endPoint}. Please check the URL and network connectivity.`,
         code: 'CONNECTION_ERROR',
@@ -144,11 +152,13 @@ export class GraphQLRequest {
 
   private isConnectionError(error: any): boolean {
     const message = error?.message || '';
-    return message.includes('ECONNREFUSED') ||
+    return (
+      message.includes('ECONNREFUSED') ||
       message.includes('ENOTFOUND') ||
       message.includes('ETIMEDOUT') ||
       message.includes('ECONNRESET') ||
-      message.includes('socket hang up');
+      message.includes('socket hang up')
+    );
   }
   private catchApolloError(result: any) {
     if (result && Array.isArray(result?.errors) && result.errors.length > 0) {
@@ -158,7 +168,10 @@ export class GraphQLRequest {
           data: {
             message: result.errors[0]?.message || 'Apollo error',
           },
-          status: result.errors[0]?.extensions?.code ?? result.errors[0]?.statusCode ?? 500,
+          status:
+            result.errors[0]?.extensions?.code ??
+            result.errors[0]?.statusCode ??
+            500,
         },
       };
     }
