@@ -5,10 +5,10 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { MessageKey } from '@app/common/constants';
 import { CurrentUser } from '@app/common/decorators';
 import type { TokenPayload } from '@app/common/dto';
+import { AuthHelper, AuthRequestWithDevice } from '@app/common/utils';
 import { Public } from '../decorators/public.decorator';
 import { RateLimit } from '../decorators/rate-limit.decorator';
 import { AuthService } from './auth.service';
@@ -21,17 +21,6 @@ import {
   RefreshTokenDto,
   ResetPasswordDto,
 } from './dto';
-import { AuthRequestContext } from './interfaces';
-
-type RequestWithDevice = Request & {
-  headers: Request['headers'] & {
-    'x-device-name'?: string | string[];
-  };
-};
-
-const firstHeaderValue = (
-  value: string | string[] | undefined,
-): string | undefined => (Array.isArray(value) ? value[0] : value);
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -48,9 +37,12 @@ export class AuthController {
   @RateLimit({ name: 'auth-login', limit: 10, ttl: 300 })
   @ApiOperation({ summary: 'Login with username and password' })
   @ApiOkResponse({ type: LoginResponseDto })
-  async login(@Body() dto: LoginDto, @Req() request: RequestWithDevice) {
+  async login(@Body() dto: LoginDto, @Req() request: AuthRequestWithDevice) {
     return {
-      data: await this.authService.login(dto, this.getRequestContext(request)),
+      data: await this.authService.login(
+        dto,
+        AuthHelper.buildRequestContext(request),
+      ),
       messageKey: MessageKey.AUTH_LOGIN_SUCCESS,
     };
   }
@@ -63,13 +55,13 @@ export class AuthController {
   @ApiOkResponse({ type: LoginResponseDto })
   async refresh(
     @Body() dto: RefreshTokenDto,
-    @Req() request: RequestWithDevice,
+    @Req() request: AuthRequestWithDevice,
   ) {
     return {
       data: await this.authSessionService.refreshSession(
         dto.sessionId,
         dto.refreshToken,
-        this.getRequestContext(request),
+        AuthHelper.buildRequestContext(request),
       ),
       messageKey: MessageKey.AUTH_REFRESH_SUCCESS,
     };
@@ -118,14 +110,6 @@ export class AuthController {
     return {
       data: await this.passwordResetService.resetPassword(dto),
       messageKey: MessageKey.AUTH_PASSWORD_RESET_SUCCESS,
-    };
-  }
-
-  private getRequestContext(request: RequestWithDevice): AuthRequestContext {
-    return {
-      ipAddress: request.ip || request.socket.remoteAddress,
-      userAgent: firstHeaderValue(request.headers['user-agent']),
-      deviceName: firstHeaderValue(request.headers['x-device-name']),
     };
   }
 }

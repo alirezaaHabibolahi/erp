@@ -1,9 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '@app/common/database/postgres';
 import { TokenPayload } from '@app/common/dto';
-import { ErrorCode, MessageKey } from '@app/common/constants';
+import { AuthHelper } from '@app/common/utils';
 import { generalConfig } from '../../config/general';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
   async validate(payload: TokenPayload): Promise<TokenPayload> {
     if (payload.tokenType !== 'access') {
-      throw this.invalidToken();
+      throw AuthHelper.invalidAccessTokenException();
     }
 
     const session = await this.prisma.authSession.findFirst({
@@ -44,7 +44,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       session.user.deletedAt ||
       !session.user.username
     ) {
-      throw this.invalidToken();
+      throw AuthHelper.invalidAccessTokenException();
     }
 
     return {
@@ -54,12 +54,5 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       username: session.user.username,
       tokenType: 'access',
     };
-  }
-
-  private invalidToken(): UnauthorizedException {
-    return new UnauthorizedException(
-      { message: MessageKey.AUTH_INVALID_TOKEN },
-      { errorCode: ErrorCode.AUTH_INVALID_TOKEN },
-    );
   }
 }

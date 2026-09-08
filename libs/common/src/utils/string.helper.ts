@@ -16,6 +16,14 @@ export class StringHelper {
     return phone.replace(/(\d{3})\d{4}(\d{2})/, '$1****$2');
   }
 
+  static normalizeIdentifier(value: string): string {
+    return value.trim().toLowerCase();
+  }
+
+  static normalizeUsername(username: string): string {
+    return this.normalizeIdentifier(username);
+  }
+
   static randomString(length = 8): string {
     const chars =
       'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

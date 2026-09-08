@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 import { PrismaService } from '@app/common/database/postgres';
 import { RedisService } from '@app/common/redis/redis.service';
 import { MessageService } from '@app/common/services/messageService/message.service';
-import { CryptoHelper, GeneralHelper } from '@app/common/utils';
+import { AuthHelper, CryptoHelper, GeneralHelper } from '@app/common/utils';
 import { SmsService } from '../sms/sms.service';
 import { PasswordResetService } from './password-reset.service';
 
@@ -97,7 +97,11 @@ describe('PasswordResetService', () => {
       1,
       JSON.stringify({
         userId: 'user-1',
-        hash: CryptoHelper.hashToken(`test-otp-secret:${phone}:${otpCode}`),
+        hash: AuthHelper.hashPasswordResetOtp(
+          'test-otp-secret',
+          phone,
+          otpCode,
+        ),
       }),
     ]);
     findFirst.mockResolvedValue({ id: 'user-1' });
@@ -132,7 +136,11 @@ describe('PasswordResetService', () => {
       1,
       JSON.stringify({
         userId: 'user-1',
-        hash: CryptoHelper.hashToken(`test-otp-secret:${phone}:correct-code`),
+        hash: AuthHelper.hashPasswordResetOtp(
+          'test-otp-secret',
+          phone,
+          'correct-code',
+        ),
       }),
     ]);
 

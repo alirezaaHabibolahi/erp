@@ -1,7 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@app/common/database/postgres';
-import { CryptoHelper } from '@app/common/utils';
-import { ErrorCode, MessageKey } from '@app/common/constants';
+import { AuthHelper, CryptoHelper, StringHelper } from '@app/common/utils';
 import { AuthRequestContext } from './interfaces';
 import { AuthSessionService } from './auth-session.service';
 import { LoginDto } from './dto';
@@ -14,7 +13,7 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto, context: AuthRequestContext) {
-    const username = this.normalizeUsername(dto.username);
+    const username = StringHelper.normalizeUsername(dto.username);
     const user = await this.prisma.user.findUnique({
       where: { username },
     });
@@ -26,7 +25,7 @@ export class AuthService {
       !user.passwordHash ||
       !user.username
     ) {
-      throw this.invalidCredentials();
+      throw AuthHelper.invalidCredentialsException();
     }
 
     const passwordMatches = await CryptoHelper.compare(
@@ -35,7 +34,7 @@ export class AuthService {
     );
 
     if (!passwordMatches) {
-      throw this.invalidCredentials();
+      throw AuthHelper.invalidCredentialsException();
     }
 
     const tokenResponse = await this.authSessionService.createSession(
@@ -80,20 +79,9 @@ export class AuthService {
     });
 
     if (!user) {
-      throw this.invalidCredentials();
+      throw AuthHelper.invalidCredentialsException();
     }
 
     return user;
-  }
-
-  private normalizeUsername(username: string): string {
-    return username.trim().toLowerCase();
-  }
-
-  private invalidCredentials(): UnauthorizedException {
-    return new UnauthorizedException(
-      { message: MessageKey.AUTH_INVALID_PASS_USERNAME },
-      { errorCode: ErrorCode.AUTH_INVALID_CREDENTIALS },
-    );
   }
 }

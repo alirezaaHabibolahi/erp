@@ -1,17 +1,12 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@app/common/database/postgres';
-import { ErrorCode, MessageKey } from '@app/common/constants';
+import { MessageKey } from '@app/common/constants';
 import { RedisService } from '@app/common/redis/redis.service';
 import { MessageService } from '@app/common/services/messageService/message.service';
-import { CryptoHelper, GeneralHelper } from '@app/common/utils';
+import { AuthHelper, CryptoHelper, GeneralHelper } from '@app/common/utils';
 import { SmsService } from '../sms/sms.service';
 import { generalConfig } from '../config/general';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto';
-
-type StoredPasswordResetOtp = {
-  hash: string;
-  userId: string;
-};
 
 const REGISTER_OTP_ATTEMPT_SCRIPT = `
 local stored = redis.call('GET', KEYS[1])
@@ -56,7 +51,7 @@ export class PasswordResetService {
     const redis = await this.redisService.connectWithRetry(
       generalConfig().redis.url,
     );
-    const cooldownKey = this.cooldownKey(phone);
+    const cooldownKey = AuthHelper.passwordResetOtpCooldownKey(phone);
     const isCoolingDown = await redis.exists(cooldownKey);
 
     if (isCoolingDown) {
@@ -69,11 +64,15 @@ export class PasswordResetService {
     );
 
     await redis.set(
-      this.otpKey(phone),
+      AuthHelper.passwordResetOtpKey(phone),
       JSON.stringify({
-        hash: this.hashOtp(phone, otpCode),
+        hash: AuthHelper.hashPasswordResetOtp(
+          config.auth.passwordResetOtpSecret,
+          phone,
+          otpCode,
+        ),
         userId: user.id,
-      } satisfies StoredPasswordResetOtp),
+      }),
       'EX',
       config.auth.passwordResetOtpTtlSeconds,
     );
@@ -83,7 +82,7 @@ export class PasswordResetService {
       'EX',
       config.auth.passwordResetOtpCooldownSeconds,
     );
-    await redis.del(this.attemptsKey(phone));
+    await redis.del(AuthHelper.passwordResetOtpAttemptsKey(phone));
 
     try {
       await this.smsService.send({
@@ -104,7 +103,7 @@ export class PasswordResetService {
         },
       });
     } catch (error) {
-      await redis.del(this.otpKey(phone));
+      await redis.del(AuthHelper.passwordResetOtpKey(phone));
       this.logger.error(
         'Password reset SMS delivery failed.',
         error instanceof Error ? error.stack : undefined,
@@ -116,10 +115,7 @@ export class PasswordResetService {
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ reset: true }> {
     if (dto.password !== dto.confirmPassword) {
-      throw new BadRequestException(
-        { message: MessageKey.VALIDATION_AUTH_PASSWORD_MISMATCH },
-        { errorCode: ErrorCode.PASSWORD_CONFIRMATION_MISMATCH },
-      );
+      throw AuthHelper.passwordMismatchException();
     }
 
     const phone = dto.phone.trim();
@@ -130,24 +126,33 @@ export class PasswordResetService {
     const [attemptStatus, storedRaw] = (await redis.eval(
       REGISTER_OTP_ATTEMPT_SCRIPT,
       2,
-      this.otpKey(phone),
-      this.attemptsKey(phone),
+      AuthHelper.passwordResetOtpKey(phone),
+      AuthHelper.passwordResetOtpAttemptsKey(phone),
       String(config.auth.passwordResetOtpTtlSeconds),
       String(config.auth.passwordResetOtpMaxAttempts),
     )) as [number, string];
 
     if (attemptStatus !== 1 || !storedRaw) {
-      throw this.invalidOtp();
+      throw AuthHelper.invalidPasswordResetOtpException();
     }
 
-    const stored = this.parseStoredOtp(storedRaw);
+    const stored = AuthHelper.parsePasswordResetOtp(storedRaw);
+
+    if (!stored) {
+      throw AuthHelper.invalidPasswordResetOtpException();
+    }
+
     const isValid = CryptoHelper.hashEquals(
       stored.hash,
-      this.hashOtp(phone, dto.otpCode.trim()),
+      AuthHelper.hashPasswordResetOtp(
+        config.auth.passwordResetOtpSecret,
+        phone,
+        dto.otpCode,
+      ),
     );
 
     if (!isValid) {
-      throw this.invalidOtp();
+      throw AuthHelper.invalidPasswordResetOtpException();
     }
 
     const user = await this.prisma.user.findFirst({
@@ -160,7 +165,7 @@ export class PasswordResetService {
     });
 
     if (!user) {
-      throw this.invalidOtp();
+      throw AuthHelper.invalidPasswordResetOtpException();
     }
 
     const passwordHash = await CryptoHelper.hash(dto.password);
@@ -187,49 +192,11 @@ export class PasswordResetService {
       }),
     ]);
     await redis.del(
-      this.otpKey(phone),
-      this.attemptsKey(phone),
-      this.cooldownKey(phone),
+      AuthHelper.passwordResetOtpKey(phone),
+      AuthHelper.passwordResetOtpAttemptsKey(phone),
+      AuthHelper.passwordResetOtpCooldownKey(phone),
     );
 
     return { reset: true };
-  }
-
-  private parseStoredOtp(value: string): StoredPasswordResetOtp {
-    try {
-      const parsed = JSON.parse(value) as StoredPasswordResetOtp;
-      if (parsed.hash && parsed.userId) {
-        return parsed;
-      }
-    } catch {
-      throw this.invalidOtp();
-    }
-
-    throw this.invalidOtp();
-  }
-
-  private invalidOtp(): BadRequestException {
-    return new BadRequestException(
-      { message: MessageKey.AUTH_PASSWORD_RESET_OTP_INVALID },
-      { errorCode: ErrorCode.PASSWORD_RESET_OTP_INVALID },
-    );
-  }
-
-  private hashOtp(phone: string, otpCode: string): string {
-    return CryptoHelper.hashToken(
-      `${generalConfig().auth.passwordResetOtpSecret}:${phone}:${otpCode}`,
-    );
-  }
-
-  private otpKey(phone: string): string {
-    return `auth:password-reset:otp:${phone}`;
-  }
-
-  private attemptsKey(phone: string): string {
-    return `auth:password-reset:attempts:${phone}`;
-  }
-
-  private cooldownKey(phone: string): string {
-    return `auth:password-reset:cooldown:${phone}`;
   }
 }

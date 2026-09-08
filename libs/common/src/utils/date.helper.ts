@@ -3,6 +3,14 @@ import PersianDate from 'persian-date';
 
 const EXCEL_EPOCH_OFFSET_DAYS = 25569;
 const MS_PER_DAY = 86400000;
+const DEFAULT_DURATION_MS = 7 * MS_PER_DAY;
+const DURATION_MULTIPLIERS: Record<string, number> = {
+  ms: 1,
+  s: 1000,
+  m: 60 * 1000,
+  h: 60 * 60 * 1000,
+  d: MS_PER_DAY,
+};
 
 export class DateHelper {
   static now(
@@ -128,6 +136,32 @@ export class DateHelper {
 
   static createExpiration(minutes = 2): Date {
     return moment().add(minutes, 'minutes').toDate();
+  }
+
+  static parseDurationToMilliseconds(
+    value: string,
+    fallbackMs = DEFAULT_DURATION_MS,
+  ): number {
+    const match = /^(\d+)\s*(ms|s|m|h|d)$/i.exec(value.trim());
+
+    if (!match) {
+      return fallbackMs;
+    }
+
+    const amount = Number(match[1]);
+    const unit = match[2].toLowerCase();
+    const multiplier = DURATION_MULTIPLIERS[unit];
+
+    return multiplier ? amount * multiplier : fallbackMs;
+  }
+
+  static expirationFromNow(
+    duration: string,
+    fallbackMs = DEFAULT_DURATION_MS,
+  ): Date {
+    return new Date(
+      Date.now() + this.parseDurationToMilliseconds(duration, fallbackMs),
+    );
   }
 
   static toTimestamp(date: string | Date): number {

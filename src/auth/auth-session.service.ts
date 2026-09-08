@@ -1,17 +1,15 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { JwtService, JwtSignOptions } from '@nestjs/jwt';
+import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@app/common/database/postgres';
-import { TokenPayload, TokenResponse } from '@app/common/dto';
-import { CryptoHelper } from '@app/common/utils';
-import { ErrorCode, MessageKey } from '@app/common/constants';
+import { TokenResponse } from '@app/common/dto';
+import {
+  AuthHelper,
+  AuthTokenUser,
+  CryptoHelper,
+  DateHelper,
+} from '@app/common/utils';
 import { generalConfig } from '../config/general';
 import { AuthRequestContext } from './interfaces';
-
-type TokenUser = {
-  id: string;
-  phone: string;
-  username: string | null;
-};
 
 export type AuthTokenResponse = TokenResponse & {
   userId: string;
@@ -27,7 +25,7 @@ export class AuthSessionService {
   ) {}
 
   async createSession(
-    user: TokenUser,
+    user: AuthTokenUser,
     context: AuthRequestContext,
   ): Promise<TokenResponse> {
     const refreshToken = CryptoHelper.generateRandomToken(64);
@@ -39,12 +37,15 @@ export class AuthSessionService {
         deviceName: context.deviceName,
         ipAddress: context.ipAddress,
         userAgent: context.userAgent,
-        expiresAt: this.expiresAt(config.jwt.refreshTokenTtl),
+        expiresAt: DateHelper.expirationFromNow(config.jwt.refreshTokenTtl),
       },
     });
 
     return {
-      accessToken: await this.signAccessToken(user, session.id),
+      accessToken: await this.jwtService.signAsync(
+        AuthHelper.buildAccessTokenPayload(user, session.id),
+        AuthHelper.accessTokenSignOptions(config.jwt),
+      ),
       refreshToken,
       sessionId: session.id,
     };
@@ -68,7 +69,7 @@ export class AuthSessionService {
       session.user.deletedAt ||
       !session.user.username
     ) {
-      throw this.invalidRefreshToken();
+      throw AuthHelper.invalidRefreshTokenException();
     }
 
     const currentRefreshTokenHash = CryptoHelper.hashToken(refreshToken);
@@ -78,7 +79,7 @@ export class AuthSessionService {
     );
 
     if (!isValid) {
-      throw this.invalidRefreshToken();
+      throw AuthHelper.invalidRefreshTokenException();
     }
 
     const newRefreshToken = CryptoHelper.generateRandomToken(64);
@@ -97,17 +98,20 @@ export class AuthSessionService {
         deviceName: context.deviceName ?? session.deviceName,
         ipAddress: context.ipAddress,
         userAgent: context.userAgent,
-        expiresAt: this.expiresAt(config.jwt.refreshTokenTtl),
+        expiresAt: DateHelper.expirationFromNow(config.jwt.refreshTokenTtl),
         lastUsedAt: new Date(),
       },
     });
 
     if (rotated.count !== 1) {
-      throw this.invalidRefreshToken();
+      throw AuthHelper.invalidRefreshTokenException();
     }
 
     return {
-      accessToken: await this.signAccessToken(session.user, session.id),
+      accessToken: await this.jwtService.signAsync(
+        AuthHelper.buildAccessTokenPayload(session.user, session.id),
+        AuthHelper.accessTokenSignOptions(config.jwt),
+      ),
       refreshToken: newRefreshToken,
       sessionId: session.id,
       userId: session.user.id,
@@ -141,61 +145,4 @@ export class AuthSessionService {
       },
     });
   }
-
-  private async signAccessToken(
-    user: TokenUser,
-    sessionId: string,
-  ): Promise<string> {
-    if (!user.username) {
-      throw this.invalidRefreshToken();
-    }
-
-    const config = generalConfig();
-    const payload: TokenPayload = {
-      sub: user.id,
-      sessionId,
-      phone: user.phone,
-      username: user.username,
-      tokenType: 'access',
-    };
-
-    return this.jwtService.signAsync(payload, {
-      secret: config.jwt.accessSecret,
-      expiresIn: config.jwt.accessTokenTtl as JwtSignOptions['expiresIn'],
-      issuer: config.jwt.issuer,
-      audience: config.jwt.audience,
-      algorithm: 'HS256',
-    });
-  }
-
-  private expiresAt(ttl: string): Date {
-    return new Date(Date.now() + parseDurationToMilliseconds(ttl));
-  }
-
-  private invalidRefreshToken(): UnauthorizedException {
-    return new UnauthorizedException(
-      { message: MessageKey.AUTH_REFRESH_TOKEN_INVALID },
-      { errorCode: ErrorCode.REFRESH_TOKEN_INVALID },
-    );
-  }
 }
-
-const parseDurationToMilliseconds = (value: string): number => {
-  const match = /^(\d+)\s*(ms|s|m|h|d)$/i.exec(value.trim());
-
-  if (!match) {
-    return 7 * 24 * 60 * 60 * 1000;
-  }
-
-  const amount = Number(match[1]);
-  const unit = match[2].toLowerCase();
-  const multipliers: Record<string, number> = {
-    ms: 1,
-    s: 1000,
-    m: 60 * 1000,
-    h: 60 * 60 * 1000,
-    d: 24 * 60 * 60 * 1000,
-  };
-
-  return amount * multipliers[unit];
-};
