@@ -1,5 +1,4 @@
 import {
-  Inject,
   Injectable,
   Logger,
   OnModuleDestroy,
@@ -15,7 +14,7 @@ export class IoredisService implements OnModuleInit, OnModuleDestroy {
   private client?: Redis;
   private readonly logger = new Logger(IoredisService.name);
 
-  constructor(@Inject() private readonly redis: RedisService) {}
+  constructor(private readonly redis: RedisService) {}
 
   async onModuleInit(): Promise<void> {
     this.client = await this.redis.connectWithRetry(generalConfig().redis.url);

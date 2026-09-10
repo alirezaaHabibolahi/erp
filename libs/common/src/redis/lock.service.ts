@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import Redlock, { Lock, Settings } from 'redlock';
 import { RedisService } from './redis.service';
 import { generalConfig } from '../../../../src/config/general';
@@ -8,7 +8,7 @@ export class RedisLock implements OnModuleInit {
   private redLock?: Redlock;
   private readonly locks = new Map<string, Lock>();
 
-  constructor(@Inject() private readonly redis: RedisService) {}
+  constructor(private readonly redis: RedisService) {}
 
   async onModuleInit(): Promise<void> {
     const redisClients = await this.redis.connectWithRetry(

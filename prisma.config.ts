@@ -12,6 +12,6 @@ export default defineConfig({
   },
   migrations: {
     path: 'prisma/migrations',
-    seed: 'ts-node -r tsconfig-paths/register prisma/seed.ts',
+    seed: 'node -r ts-node/register -r tsconfig-paths/register prisma/seed.ts',
   },
 });

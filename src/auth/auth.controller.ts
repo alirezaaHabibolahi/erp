@@ -8,7 +8,8 @@ import {
 import { MessageKey } from '@app/common/constants';
 import { CurrentUser } from '@app/common/decorators';
 import type { TokenPayload } from '@app/common/dto';
-import { AuthHelper, AuthRequestWithDevice } from '@app/common/utils';
+import { AuthHelper } from '@app/common/utils';
+import type { AuthRequestWithDevice } from '@app/common/utils';
 import { Public } from '../decorators/public.decorator';
 import { RateLimit } from '../decorators/rate-limit.decorator';
 import { AuthService } from './auth.service';
