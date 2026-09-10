@@ -55,7 +55,7 @@ Example:
 @Post()
 @RequireAccess({
   systemCode: 2,
-  resourceCode: 1000,
+  resourceCode: 2001,
   actionCode: 2,
 })
 create(@CurrentUser() user: CurrentUserDto, @Body() dto: CreateInvoiceDto) {
@@ -123,9 +123,9 @@ invoices.controller.ts
 Permissions:
 
 ```text
-2.1000.1 = SALES_INVOICE.READ
-2.1000.2 = SALES_INVOICE.CREATE
-2.1000.3 = SALES_INVOICE.UPDATE
+2.2001.1 = SALES_INVOICE.READ
+2.2001.2 = SALES_INVOICE.CREATE
+2.2001.3 = SALES_INVOICE.UPDATE
 ```
 
 Database columns:

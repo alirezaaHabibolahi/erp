@@ -171,7 +171,7 @@ describe('AccessService', () => {
                 systemCode: SystemCode.SALES,
                 resourceCode: ResourceCode.SALES_INVOICE,
                 actionCode: ActionCode.READ,
-                key: '2.1000.1',
+                key: '2.2001.1',
                 readableKey: 'SALES_INVOICE.READ',
               },
             },
@@ -187,7 +187,7 @@ describe('AccessService', () => {
           systemCode: SystemCode.SALES,
           resourceCode: ResourceCode.SALES_INVOICE,
           actionCode: ActionCode.READ,
-          key: '2.1000.1',
+          key: '2.2001.1',
           readableKey: 'SALES_INVOICE.READ',
           scopes: [
             {

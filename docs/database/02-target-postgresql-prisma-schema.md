@@ -231,9 +231,9 @@ system_code + key
 Seed examples:
 
 ```text
-2.1000 SALES_INVOICE
-2.1001 SALES_PROFORMA
-2.1003 SALES_CENTER
+2.2001 SALES_INVOICE
+2.2002 SALES_PROFORMA
+2.2003 SALES_CENTER
 ```
 
 ### actions
@@ -279,7 +279,7 @@ system_code + resource_code + action_code
 | system_code   | integer     | required                               |
 | resource_code | integer     | required                               |
 | action_code   | integer     | required                               |
-| key           | string      | unique compact key, e.g. `2.1001.1`    |
+| key           | string      | unique compact key, e.g. `2.2002.1`    |
 | readable_key  | string      | unique readable key                    |
 | description   | text        | optional                               |
 | is_active     | boolean     | default true                           |

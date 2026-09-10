@@ -1,6 +1,11 @@
 import * as bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma, PrismaClient, ScopeType } from '@prisma/client';
+import {
+  ActionCode,
+  ResourceCode,
+  SystemCode,
+} from '../src/access/access-codes';
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -17,45 +22,61 @@ const TEST_PASSWORD_HASH =
   '$2b$10$75Ym9s5HW4xbbQeSfE/PYuU9hhHDso1ClAPtYw4NujuukvvIkvDTG';
 
 const SYSTEM = {
-  FINANCE: { code: 1, key: 'FINANCE', name: 'Finance' },
-  SALES: { code: 2, key: 'SALES', name: 'Sales' },
-  INVENTORY: { code: 3, key: 'INVENTORY', name: 'Inventory' },
-  IAM: { code: 90, key: 'IAM', name: 'Identity and Access Management' },
+  FINANCE: { code: SystemCode.FINANCE, key: 'FINANCE', name: 'Finance' },
+  SALES: { code: SystemCode.SALES, key: 'SALES', name: 'Sales' },
+  INVENTORY: {
+    code: SystemCode.INVENTORY,
+    key: 'INVENTORY',
+    name: 'Inventory',
+  },
+  IAM: {
+    code: SystemCode.IAM,
+    key: 'IAM',
+    name: 'Identity and Access Management',
+  },
 };
 
 const RESOURCE = {
   SALES_INVOICE: {
     systemCode: SYSTEM.SALES.code,
-    code: 1000,
+    code: ResourceCode.SALES_INVOICE,
     key: 'SALES_INVOICE',
     name: 'Sales Invoice',
   },
   SALES_PROFORMA: {
     systemCode: SYSTEM.SALES.code,
-    code: 1001,
+    code: ResourceCode.SALES_PROFORMA,
     key: 'SALES_PROFORMA',
     name: 'Sales Proforma',
   },
   SALES_CENTER: {
     systemCode: SYSTEM.SALES.code,
-    code: 1003,
+    code: ResourceCode.SALES_CENTER,
     key: 'SALES_CENTER',
     name: 'Sales Center',
   },
 };
 
 const ACTION = {
-  READ: { code: 1, key: 'READ', name: 'Read' },
-  CREATE: { code: 2, key: 'CREATE', name: 'Create' },
-  UPDATE: { code: 3, key: 'UPDATE', name: 'Update' },
-  SOFT_DELETE: { code: 4, key: 'SOFT_DELETE', name: 'Soft delete' },
-  HARD_DELETE: { code: 5, key: 'HARD_DELETE', name: 'Hard delete' },
-  APPROVE: { code: 6, key: 'APPROVE', name: 'Approve' },
-  REJECT: { code: 7, key: 'REJECT', name: 'Reject' },
-  CANCEL: { code: 8, key: 'CANCEL', name: 'Cancel' },
-  PRINT: { code: 9, key: 'PRINT', name: 'Print' },
-  EXPORT: { code: 10, key: 'EXPORT', name: 'Export' },
-  SUBMIT: { code: 11, key: 'SUBMIT', name: 'Submit' },
+  READ: { code: ActionCode.READ, key: 'READ', name: 'Read' },
+  CREATE: { code: ActionCode.CREATE, key: 'CREATE', name: 'Create' },
+  UPDATE: { code: ActionCode.UPDATE, key: 'UPDATE', name: 'Update' },
+  SOFT_DELETE: {
+    code: ActionCode.SOFT_DELETE,
+    key: 'SOFT_DELETE',
+    name: 'Soft delete',
+  },
+  HARD_DELETE: {
+    code: ActionCode.HARD_DELETE,
+    key: 'HARD_DELETE',
+    name: 'Hard delete',
+  },
+  APPROVE: { code: ActionCode.APPROVE, key: 'APPROVE', name: 'Approve' },
+  REJECT: { code: ActionCode.REJECT, key: 'REJECT', name: 'Reject' },
+  CANCEL: { code: ActionCode.CANCEL, key: 'CANCEL', name: 'Cancel' },
+  PRINT: { code: ActionCode.PRINT, key: 'PRINT', name: 'Print' },
+  EXPORT: { code: ActionCode.EXPORT, key: 'EXPORT', name: 'Export' },
+  SUBMIT: { code: ActionCode.SUBMIT, key: 'SUBMIT', name: 'Submit' },
 };
 
 async function main() {
@@ -108,12 +129,13 @@ async function main() {
   for (const resource of Object.values(RESOURCE)) {
     await prisma.resource.upsert({
       where: {
-        systemCode_code: {
+        systemCode_key: {
           systemCode: resource.systemCode,
-          code: resource.code,
+          key: resource.key,
         },
       },
       update: {
+        code: resource.code,
         key: resource.key,
         name: resource.name,
         isActive: true,
@@ -166,28 +188,52 @@ async function main() {
 
   await grantRolePermission({
     roleId: getRequired(roleByKey, 'SALES_OPERATOR').id,
-    permissionId: getRequired(permissionByKey, permissionKey(2, 1001, 1)).id,
+    permissionId: getRequiredPermission(
+      permissionByKey,
+      RESOURCE.SALES_PROFORMA,
+      ACTION.READ,
+    ),
   });
   await grantRolePermission({
     roleId: getRequired(roleByKey, 'SALES_OPERATOR').id,
-    permissionId: getRequired(permissionByKey, permissionKey(2, 1001, 2)).id,
+    permissionId: getRequiredPermission(
+      permissionByKey,
+      RESOURCE.SALES_PROFORMA,
+      ACTION.CREATE,
+    ),
   });
   await grantRolePermission({
     roleId: getRequired(roleByKey, 'SALES_OPERATOR').id,
-    permissionId: getRequired(permissionByKey, permissionKey(2, 1001, 3)).id,
+    permissionId: getRequiredPermission(
+      permissionByKey,
+      RESOURCE.SALES_PROFORMA,
+      ACTION.UPDATE,
+    ),
   });
 
   await grantRolePermission({
     roleId: getRequired(roleByKey, 'BRANCH_MANAGER').id,
-    permissionId: getRequired(permissionByKey, permissionKey(2, 1001, 1)).id,
+    permissionId: getRequiredPermission(
+      permissionByKey,
+      RESOURCE.SALES_PROFORMA,
+      ACTION.READ,
+    ),
   });
   await grantRolePermission({
     roleId: getRequired(roleByKey, 'BRANCH_MANAGER').id,
-    permissionId: getRequired(permissionByKey, permissionKey(2, 1001, 6)).id,
+    permissionId: getRequiredPermission(
+      permissionByKey,
+      RESOURCE.SALES_PROFORMA,
+      ACTION.APPROVE,
+    ),
   });
   await grantRolePermission({
     roleId: getRequired(roleByKey, 'BRANCH_MANAGER').id,
-    permissionId: getRequired(permissionByKey, permissionKey(2, 1000, 1)).id,
+    permissionId: getRequiredPermission(
+      permissionByKey,
+      RESOURCE.SALES_INVOICE,
+      ACTION.READ,
+    ),
   });
 
   const admin = await seedUser({
@@ -478,6 +524,17 @@ function permissionKey(
   actionCode: number,
 ) {
   return `${systemCode}.${resourceCode}.${actionCode}`;
+}
+
+function getRequiredPermission(
+  map: Map<string, { id: string }>,
+  resource: { systemCode: number; code: number },
+  action: { code: number },
+) {
+  return getRequired(
+    map,
+    permissionKey(resource.systemCode, resource.code, action.code),
+  ).id;
 }
 
 function getRequired<T>(map: Map<string, T>, key: string): T {

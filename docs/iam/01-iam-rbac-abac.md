@@ -44,8 +44,8 @@ Example:
 ```text
 Role: SALES_OPERATOR
 Permissions:
-  2.1001.1 = SALES_PROFORMA.READ
-  2.1001.2 = SALES_PROFORMA.CREATE
+  2.2002.1 = SALES_PROFORMA.READ
+  2.2002.2 = SALES_PROFORMA.CREATE
 ```
 
 ### ABAC
@@ -59,7 +59,7 @@ Where and under which conditions is this permission valid?
 Example:
 
 ```text
-Permission: 2.1001.3 = SALES_PROFORMA.UPDATE
+Permission: 2.2002.3 = SALES_PROFORMA.UPDATE
 Scope: OWN
 Branches: Tehran
 Conditions:
@@ -77,14 +77,14 @@ Use this machine format:
 Example:
 
 ```text
-2.1001.1
+2.2002.1
 ```
 
 Meaning:
 
 ```text
 systemCode: 2      = SALES
-resourceCode: 1001 = SALES_PROFORMA
+resourceCode: 2002 = SALES_PROFORMA
 actionCode: 1      = READ
 ```
 
@@ -109,13 +109,15 @@ inside the permission key. They are scopes/conditions, not permissions.
 ## Initial Resource Codes
 
 ```text
-1000 SALES_INVOICE
-1001 SALES_PROFORMA
-1003 SALES_CENTER
+2001 SALES_INVOICE
+2002 SALES_PROFORMA
+2003 SALES_CENTER
 ```
 
-Resource codes are grouped by ERP system. A future shared contracts package
-will expose these constants to backend and frontend.
+Resource codes are grouped by ERP system and use the system code as the
+thousand prefix. For example, SALES is system `2`, so sales resources live in
+`2001..2999`. A future shared contracts package will expose these constants to
+backend and frontend.
 
 ## Initial Action Codes
 
@@ -207,14 +209,14 @@ UserRole:
   Ali -> SALES_OPERATOR -> Demo Company
 
 RolePermission:
-  SALES_OPERATOR -> 2.1001.1
-  SALES_OPERATOR -> 2.1001.2
-  SALES_OPERATOR -> 2.1001.3
+  SALES_OPERATOR -> 2.2002.1
+  SALES_OPERATOR -> 2.2002.2
+  SALES_OPERATOR -> 2.2002.3
 
 UserRoleScope:
-  2.1001.3 -> OWN -> Tehran
-  2.1001.1 -> BRANCH -> Shiraz
-  2.1001.2 -> BRANCH -> Tehran, Shiraz
+  2.2002.3 -> OWN -> Tehran
+  2.2002.1 -> BRANCH -> Shiraz
+  2.2002.2 -> BRANCH -> Tehran, Shiraz
 ```
 
 Result:
@@ -299,9 +301,9 @@ GET /auth/me/access
   "access": [
     {
       "systemCode": 2,
-      "resourceCode": 1001,
+      "resourceCode": 2002,
       "actionCode": 1,
-      "key": "2.1001.1",
+      "key": "2.2002.1",
       "readableKey": "SALES_PROFORMA.READ",
       "scopes": [
         {
@@ -359,9 +361,9 @@ systems:
   IAM = 90
 
 resources:
-  1000 SALES_INVOICE
-  1001 SALES_PROFORMA
-  1003 SALES_CENTER
+  2001 SALES_INVOICE
+  2002 SALES_PROFORMA
+  2003 SALES_CENTER
 
 actions:
   READ, CREATE, UPDATE, SOFT_DELETE, HARD_DELETE, APPROVE, REJECT,

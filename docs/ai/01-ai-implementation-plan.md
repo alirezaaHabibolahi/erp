@@ -161,13 +161,13 @@ Test seed example:
 company: Demo Company
 branches: Tehran Branch, Shiraz Branch
 system: SALES = 2
-resources: SALES_INVOICE = 1000, SALES_PROFORMA = 1001, SALES_CENTER = 1003
+resources: SALES_INVOICE = 2001, SALES_PROFORMA = 2002, SALES_CENTER = 2003
 actions: READ = 1, CREATE = 2, UPDATE = 3, APPROVE = 6
 permissions:
-  2.1001.1
-  2.1001.2
-  2.1001.3
-  2.1001.6
+  2.2002.1
+  2.2002.2
+  2.2002.3
+  2.2002.6
 roles:
   TEST_ADMIN
   SALES_OPERATOR

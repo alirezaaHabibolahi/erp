@@ -175,7 +175,7 @@ Example route metadata:
 ```ts
 @RequireAccess({
   systemCode: 2,
-  resourceCode: 1000,
+  resourceCode: 2001,
   actionCode: 6,
 })
 ```

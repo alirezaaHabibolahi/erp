@@ -5,10 +5,11 @@ export enum SystemCode {
   IAM = 90,
 }
 
+// Resource codes use the owning system code as the thousand prefix.
 export enum ResourceCode {
-  SALES_INVOICE = 1000,
-  SALES_PROFORMA = 1001,
-  SALES_CENTER = 1003,
+  SALES_INVOICE = 2001,
+  SALES_PROFORMA = 2002,
+  SALES_CENTER = 2003,
 }
 
 export enum ActionCode {
