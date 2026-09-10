@@ -84,14 +84,10 @@ Done when:
 Status:
 
 ```text
-In progress. Prisma 7 packages, prisma.config.ts, schema, seed,
-docker-compose, env example, Nest Prisma module/service, NestJS 12 platform
-baseline, and centralized
-response/error/language handling have been added. The IAM schema now uses
-identity-only users, numeric permission codes, role assignments, and role
-scopes. Username/password auth, JWT sessions, refresh rotation, logout, and SMS
-OTP password reset are implemented. The first database migration still needs to
-be created and run against a live PostgreSQL database.
+Implemented. Prisma schema, first migration, seed data, username/password auth,
+JWT sessions, refresh rotation, logout, Redis SMS OTP password reset,
+database-backed access evaluation, effective access output, and authorization
+test routes are in place.
 ```
 
 Goal:
@@ -114,14 +110,14 @@ Tasks:
 - Create `libs/common/src/database/postgres/prisma.module.ts`. Done.
 - Create `libs/common/src/database/postgres/prisma.service.ts`. Done.
 - Add initial Prisma schema for auth and permissions only. Done.
-- Add first migration for minimal organization context and IAM tables.
+- Add first migration for minimal organization context and IAM tables. Done.
 - Add seed script for test company, branches, systems, resources, actions,
   permissions, roles, users, role assignments, and role scopes. Done.
 - Standardize global response, error, validation, and language handling. Done.
 - Implement username/password login and JWT session runtime. Done.
 - Implement atomic refresh rotation and logout. Done.
 - Implement phone/SMS OTP password reset with Redis. Done.
-- Add one or two protected test routes to verify permission checks.
+- Add protected test routes to verify permission checks. Done.
 
 Initial tables:
 
@@ -233,9 +229,9 @@ yarn db:seed
 Status:
 
 ```text
-Authentication runtime is implemented and unit-tested. Permission catalog
-queries, PolicyService, AccessGuard integration, and protected authorization
-test routes remain.
+Implemented. Authentication runtime, DB-backed access evaluation, global
+AccessGuard integration, effective access endpoint, and protected authorization
+test routes are unit-tested and smoke-tested against local PostgreSQL/Redis.
 ```
 
 Goal:
@@ -247,18 +243,18 @@ Make authentication and authorization usable in the running NestJS app.
 Tasks:
 
 - Implement users table access through Prisma. Done for authentication.
-- Implement request company/branch context through role assignments and scopes.
+- Implement request company/branch context through role assignments and scopes. Done.
 - Implement password hash and Redis OTP recovery. Done.
 - Implement auth sessions with refresh token hash. Done.
 - Implement login, refresh, logout. Done.
 - Create auth controller routes safely. Done.
 - Mark public auth routes with `@Public()`. Done.
 - Register `JwtAuthGuard` globally with fail-closed defaults. Done.
-- Implement permission catalog access.
-- Implement `PolicyService`.
-- Implement `PermissionGuard`.
-- Implement `@RequireAccess(...)`.
-- Add test authorization endpoints.
+- Implement permission catalog access. Done.
+- Implement access policy service. Done.
+- Implement `AccessGuard`. Done.
+- Implement `@RequireAccess(...)`. Done.
+- Add test authorization endpoints. Done.
 - Add tests for login and refresh token rotation. Done.
 - Add tests for phone/SMS OTP password reset. Done.
 

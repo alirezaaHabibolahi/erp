@@ -12,10 +12,12 @@ import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { AccessModule } from './access/access.module';
 import { generalConfig } from './config/general';
 import { environmentSchema } from './config/environment.schema';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RateLimitGuard } from './guards/rate-limit.guard';
+import { AccessGuard } from './guards/access-auth.guard';
 
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     }),
     CommonModule,
     AuthModule,
+    AccessModule,
   ],
   controllers: [AppController],
   providers: [
@@ -50,6 +53,10 @@ import { RateLimitGuard } from './guards/rate-limit.guard';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AccessGuard,
     },
   ],
 })

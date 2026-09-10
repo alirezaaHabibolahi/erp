@@ -15,6 +15,7 @@ import { RateLimit } from '../decorators/rate-limit.decorator';
 import { AuthService } from './auth.service';
 import { AuthSessionService } from './auth-session.service';
 import { PasswordResetService } from './password-reset.service';
+import { AccessService } from '../access/access.service';
 import {
   ForgotPasswordDto,
   LoginDto,
@@ -30,6 +31,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly authSessionService: AuthSessionService,
     private readonly passwordResetService: PasswordResetService,
+    private readonly accessService: AccessService,
   ) {}
 
   @Public()
@@ -87,6 +89,15 @@ export class AuthController {
   async me(@CurrentUser() user: TokenPayload) {
     return {
       data: await this.authService.getMe(user.sub),
+    };
+  }
+
+  @Get('me/access')
+  @ApiBearerAuth('bearer')
+  @ApiOperation({ summary: 'Get current user effective access list' })
+  async meAccess(@CurrentUser() user: TokenPayload) {
+    return {
+      data: await this.accessService.getUserAccess(user.sub),
     };
   }
 

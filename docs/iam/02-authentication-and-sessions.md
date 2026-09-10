@@ -3,8 +3,8 @@
 Status: implemented and unit-tested.
 
 This document describes the current authentication runtime. Authorization
-through roles, permissions, and scopes is documented separately and is the next
-implementation step.
+through roles, permissions, and scopes is implemented separately by the
+database-backed access guard.
 
 ## Decisions
 
@@ -42,14 +42,15 @@ src/auth/
 
 ## HTTP Endpoints
 
-| Method | Path                    | Public | Purpose                              |
-| ------ | ----------------------- | ------ | ------------------------------------ |
-| POST   | `/auth/login`           | yes    | Login with username and password     |
-| POST   | `/auth/refresh`         | yes    | Rotate refresh token                 |
-| POST   | `/auth/logout`          | no     | Revoke the current session           |
-| GET    | `/auth/me`              | no     | Return the current safe user profile |
-| POST   | `/auth/forgot-password` | yes    | Request an SMS password-reset OTP    |
-| POST   | `/auth/reset-password`  | yes    | Reset password with phone and OTP    |
+| Method | Path                    | Public | Purpose                                 |
+| ------ | ----------------------- | ------ | --------------------------------------- |
+| POST   | `/auth/login`           | yes    | Login with username and password        |
+| POST   | `/auth/refresh`         | yes    | Rotate refresh token                    |
+| POST   | `/auth/logout`          | no     | Revoke the current session              |
+| GET    | `/auth/me`              | no     | Return the current safe user profile    |
+| GET    | `/auth/me/access`       | no     | Return current code-based access scopes |
+| POST   | `/auth/forgot-password` | yes    | Request an SMS password-reset OTP       |
+| POST   | `/auth/reset-password`  | yes    | Reset password with phone and OTP       |
 
 All endpoints use the global success/error envelope and language middleware.
 
@@ -195,12 +196,12 @@ before password-reset delivery can succeed.
 ## Verification
 
 Unit tests cover login behavior, session hash storage, atomic refresh rotation,
-unknown-phone privacy, hashed OTP storage, password reset, and session
-revocation. Database/Redis/SMS integration still requires local infrastructure
-and provider credentials.
+unknown-phone privacy, hashed OTP storage, password reset, session revocation,
+and database-backed access evaluation. Local PostgreSQL and Redis smoke tests
+verify login, refresh, logout, password reset, effective access, and protected
+authorization test routes.
 
 ## Next Step
 
-Implement `PolicyService`, database-backed access evaluation,
-`@RequireAccess(...)`, and protected authorization test routes. Authentication
-must stay separate from company, branch, role, and permission evaluation.
+Next, build administration APIs for roles, role permissions, user role
+assignments, branch scopes, and explicit permission overrides.

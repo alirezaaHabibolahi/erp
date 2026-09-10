@@ -1,6 +1,6 @@
 # IAM, RBAC, ABAC, and Permission Design
 
-This document defines the target access-control model for the ERP backend.
+This document defines the implemented access-control model for the ERP backend.
 
 ## Core Decision
 
@@ -227,17 +227,7 @@ Ali can create proformas in Tehran and Shiraz.
 
 ## Route-Level Usage
 
-Target decorator:
-
-```ts
-@RequireAccess({
-  systemCode: 2,
-  resourceCode: 1001,
-  actionCode: 1,
-})
-```
-
-Later, after the contracts package:
+Backend code uses named numeric enums from `src/access/access-codes.ts`:
 
 ```ts
 @RequireAccess({
@@ -247,49 +237,110 @@ Later, after the contracts package:
 })
 ```
 
-The decorator only stores metadata. `AccessGuard` and a future
-`PermissionService` perform the real database check before the controller runs.
+The decorator only stores metadata. `AccessGuard` runs before the controller
+and checks the current authenticated user against PostgreSQL role,
+permission, and scope rows.
+
+The guard reads request access context from these locations:
+
+```text
+x-company-id header, params.companyId, body.companyId, query.companyId
+x-branch-id header, params.branchId, body.branchId, query.branchId
+x-owner-user-id header, params.ownerUserId, body.ownerUserId, query.ownerUserId
+```
+
+When `branchId` is present, the guard loads the branch and validates that it
+belongs to the requested company. `OWN` scopes require `ownerUserId` to match
+the current authenticated user id.
+
+Example protected test route:
+
+```ts
+@RequireAccess({
+  systemCode: SystemCode.SALES,
+  resourceCode: ResourceCode.SALES_PROFORMA,
+  actionCode: ActionCode.READ,
+})
+```
+
+Multiple `@RequireAccess([...])` entries are treated as AND: all listed access
+requirements must pass.
 
 ## Permission Evaluation Order
 
-Recommended order:
+Implemented order:
 
 1. Validate access token and auth session.
-2. Load user.
-3. Deny if user is inactive, unverified when verification is required, or soft-deleted.
-4. Load requested company/branch context from headers or route context.
-5. Deny if company or branch is inactive.
-6. Load active `UserRole` records for user + company.
-7. Load active roles and role permissions.
-8. Apply explicit `DENY` overrides first.
-9. Check role permission or explicit `ALLOW` override.
-10. Check `UserRoleScope` or override scope.
-11. Check branch list when scope is `BRANCH` or branch-bound `OWN`.
-12. Check owner when scope is `OWN`.
-13. Check JSON conditions for `CUSTOM` or amount/status limits.
-14. Allow or deny.
+2. Deny if user is inactive or soft-deleted.
+3. Load requested company/branch context from headers or route context.
+4. Deny if company or branch is inactive.
+5. Load active `UserRole` records for user + company.
+6. Load active roles and role permissions.
+7. Apply explicit `DENY` overrides first.
+8. Check role permission or explicit `ALLOW` override.
+9. Check `UserRoleScope` or override scope.
+10. Check branch list when scope is `BRANCH` or branch-bound `OWN`.
+11. Check owner when scope is `OWN`.
+12. Deny `CUSTOM` until a condition evaluator is implemented.
+13. Allow or deny.
 
 Explicit deny always beats allow.
 
 ## Frontend Ability Shape
 
-Frontend receives compact effective abilities only for UI decisions:
+Frontend receives compact effective abilities only for UI decisions from:
+
+```text
+GET /auth/me/access
+```
 
 ```json
 {
-  "abilities": {
-    "2.1001.1": {
-      "branch": ["branch_tehran", "branch_shiraz"]
-    },
-    "2.1001.3": {
-      "own": ["branch_tehran"]
+  "access": [
+    {
+      "systemCode": 2,
+      "resourceCode": 1001,
+      "actionCode": 1,
+      "key": "2.1001.1",
+      "readableKey": "SALES_PROFORMA.READ",
+      "scopes": [
+        {
+          "scopeType": "BRANCH",
+          "companyId": "company_id",
+          "branchIds": ["branch_shiraz"]
+        }
+      ]
     }
-  }
+  ],
+  "deniedAccess": []
 }
 ```
 
 Frontend hidden buttons are not security. Backend guards and service policy
 checks are the source of truth.
+
+## Authorization Test Routes
+
+The first implementation includes protected routes under
+`/authorization-test` so seed access can be checked without building ERP
+business modules:
+
+```text
+GET   /authorization-test/sales/proforma/read
+POST  /authorization-test/sales/proforma/create
+PATCH /authorization-test/sales/proforma/update-own
+GET   /authorization-test/sales/invoice/read
+```
+
+Expected seed behavior:
+
+```text
+test_admin can use every seeded sales permission at company scope.
+test_sales_operator can read proformas only in Shiraz.
+test_sales_operator can create proformas in Tehran and Shiraz.
+test_sales_operator can update only own proformas in Tehran.
+test_branch_manager can read invoices/proformas in Tehran and Shiraz.
+```
 
 ## Phase 1 Seed
 
